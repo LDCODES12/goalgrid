@@ -7,6 +7,7 @@ import { getLocalDateKey, getWeekKey, getWeekStart } from "@/lib/time"
 import { formatInTimeZone } from "date-fns-tz"
 import {
   computeDailyStreak,
+  computeWeeklyPoints,
   computeWeeklyStreak,
   summarizeDailyCheckIns,
   summarizeWeeklyCheckIns,
@@ -15,8 +16,10 @@ import { getBadges } from "@/lib/badges"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { CheckInButton } from "@/components/check-in-button"
-import { EmptyState } from "@/components/empty-state"
+import { CompletionRing } from "@/components/completion-ring"
+import { FocusModeToggle } from "@/components/focus-mode-toggle"
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -83,6 +86,46 @@ export default async function DashboardPage() {
     (sum, item) => sum + item.checkIns.length,
     0
   )
+  const weeklyScore = todayGoals.reduce((sum, item) => {
+    return (
+      sum +
+      computeWeeklyPoints({
+        goal: {
+          cadenceType: item.goal.cadenceType,
+          pointsPerCheckIn: item.goal.pointsPerCheckIn,
+          weeklyTarget: item.goal.weeklyTarget,
+          weeklyTargetBonus: item.goal.weeklyTargetBonus,
+          streakBonus: item.goal.streakBonus,
+        },
+        checkInsThisWeek: item.checkInsThisWeek,
+        currentStreak: item.dailyStreak,
+        timeZone: user.timezone,
+        today: now,
+      })
+    )
+  }, 0)
+
+  const maxDailyStreak = Math.max(
+    0,
+    ...todayGoals
+      .filter((item) => item.goal.cadenceType === "DAILY")
+      .map((item) => item.dailyStreak)
+  )
+  const streakProgress = Math.min(
+    100,
+    Math.round((maxDailyStreak / 7) * 100)
+  )
+  const pendingGoal = todayGoals.find((item) => !item.todayDone)
+
+  const hourCounts = todayGoals
+    .flatMap((item) => item.checkIns)
+    .reduce((acc, checkIn) => {
+      const hour = formatInTimeZone(checkIn.timestamp, user.timezone, "HH")
+      acc[hour] = (acc[hour] ?? 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+  const bestHour = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0]
+  const bestTimeLabel = bestHour ? `${bestHour[0]}:00` : "Not enough data"
   const badges = getBadges({
     totalCheckIns,
     dailyStreaks: todayGoals
@@ -103,7 +146,7 @@ export default async function DashboardPage() {
     user.reminderFrequency === "WEEKDAYS" ? "Weekdays" : "Daily"
 
   return (
-    <div className="space-y-6">
+    <div id="dashboard" className="space-y-6">
       {!membership ? (
         <div className="rounded-2xl border border-dashed bg-background px-6 py-4 text-sm text-muted-foreground">
           You&apos;re not in a group yet.{" "}
@@ -113,21 +156,66 @@ export default async function DashboardPage() {
           when you&apos;re ready for accountability.
         </div>
       ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Keep your goals on track with one‑tap check‑ins.
+          </p>
+        </div>
+        <FocusModeToggle targetId="dashboard" />
+      </div>
+
       {hasMissingToday ? (
         <div className="rounded-2xl border border-dashed bg-background px-6 py-4 text-sm text-muted-foreground">
           You haven&apos;t checked in today. A quick tap keeps your streak alive.
         </div>
       ) : null}
 
+      <Card className="border bg-card/70 shadow-sm backdrop-blur" data-focus-hide="true">
+        <CardContent className="grid gap-4 p-6 md:grid-cols-[1.2fr_1fr] md:items-center">
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">Weekly score</div>
+            <div className="text-3xl font-semibold">{weeklyScore} points</div>
+            <div className="text-sm text-muted-foreground">
+              Best streak: {maxDailyStreak} days
+            </div>
+            {pendingGoal ? (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <CheckInButton
+                  goalId={pendingGoal.goal.id}
+                  completed={pendingGoal.todayDone}
+                  label={`Check in: ${pendingGoal.goal.name}`}
+                />
+                <span className="text-xs text-muted-foreground">
+                  One tap logs today&apos;s progress.
+                </span>
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">
+                You&apos;re fully checked in today.
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-center">
+            <CompletionRing value={streakProgress} label="Streak progress" />
+          </div>
+        </CardContent>
+      </Card>
+
       <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <Card>
+        <Card id="today">
           <CardHeader>
             <CardTitle>Today</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {todayGoals.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                Create your first goal to start tracking.
+              <div className="rounded-2xl border border-dashed bg-background p-4 text-sm text-muted-foreground">
+                No goals yet.{" "}
+                <a href="/goals" className="text-foreground underline">
+                  Create your first goal
+                </a>{" "}
+                to start tracking.
               </div>
             ) : (
               todayGoals.map(({ goal, todayDone, checkInsThisWeek }) => {
@@ -174,7 +262,7 @@ export default async function DashboardPage() {
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card data-focus-hide="true">
           <CardHeader>
             <CardTitle>Streaks</CardTitle>
           </CardHeader>
@@ -202,7 +290,7 @@ export default async function DashboardPage() {
         </Card>
       </section>
 
-      <Card>
+      <Card data-focus-hide="true">
         <CardHeader>
           <CardTitle>Weekly planning</CardTitle>
         </CardHeader>
@@ -222,6 +310,12 @@ export default async function DashboardPage() {
                   ? Math.ceil((goal.weeklyTarget * daysElapsed) / 7)
                   : daysElapsed
               const onTrack = checkInsThisWeek.length >= expectedByNow
+              const remainingRequired = Math.max(
+                0,
+                weeklyTarget - checkInsThisWeek.length
+              )
+              const remainingDays = Math.max(0, 7 - daysElapsed)
+              const atRisk = remainingRequired > remainingDays
               const progress = Math.min(
                 100,
                 Math.round((checkInsThisWeek.length / weeklyTarget) * 100)
@@ -241,8 +335,11 @@ export default async function DashboardPage() {
                           : `Weekly target: ${goal.weeklyTarget}x`}
                       </div>
                     </div>
-                    <Badge variant={onTrack ? "secondary" : "outline"}>
-                      {onTrack ? "On track" : "Behind"}
+                    <Badge
+                      variant={onTrack ? "secondary" : "outline"}
+                      className={atRisk ? "bg-destructive/10 text-destructive" : ""}
+                    >
+                      {atRisk ? "At risk" : onTrack ? "On track" : "Behind"}
                     </Badge>
                   </div>
                   <div className="mt-3 space-y-2">
@@ -264,7 +361,7 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-focus-hide="true">
         <CardHeader>
           <CardTitle>Badges</CardTitle>
         </CardHeader>
@@ -283,7 +380,7 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+      <section className="grid gap-4 lg:grid-cols-[2fr_1fr]" data-focus-hide="true">
         <Card>
           <CardHeader>
             <CardTitle>Upcoming reminders</CardTitle>
@@ -295,6 +392,10 @@ export default async function DashboardPage() {
             </div>
             <div>
               Frequency: <span className="text-foreground">{reminderLabel}</span>
+            </div>
+            <div>
+              Best check-in time:{" "}
+              <span className="text-foreground">{bestTimeLabel}</span>
             </div>
             <div className="text-xs text-muted-foreground">
               Push/email reminders are coming soon. We&apos;ll notify you when
@@ -319,6 +420,20 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </section>
+
+      {pendingGoal ? (
+        <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-3rem)] -translate-x-1/2 rounded-2xl border bg-background/90 p-3 shadow-lg backdrop-blur md:hidden">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <div>
+              <div className="text-xs text-muted-foreground">Check in now</div>
+              <div className="text-sm font-medium">{pendingGoal.goal.name}</div>
+            </div>
+            <Button asChild>
+              <a href="#today">Go</a>
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

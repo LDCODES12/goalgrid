@@ -123,3 +123,33 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.8);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(28px) scale(1);
+  }
+}
+
+.confetti-burst {
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 6px;
+  height: 10px;
+  border-radius: 2px;
+  animation: confetti-fall 900ms ease-out forwards;
+}
+
+[data-focus="on"] [data-focus-hide="true"] {
+  display: none;
+}

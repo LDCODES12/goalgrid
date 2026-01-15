@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { checkInGoalAction } from "@/app/actions/checkins"
+import { ConfettiBurst } from "@/components/confetti-burst"
 
 export function CheckInButton({
   goalId,
@@ -17,6 +18,7 @@ export function CheckInButton({
 }) {
   const [isPending, startTransition] = useTransition()
   const [optimisticDone, setOptimisticDone] = useState(completed)
+  const [showConfetti, setShowConfetti] = useState(false)
   const router = useRouter()
 
   const handleCheckIn = () => {
@@ -31,18 +33,27 @@ export function CheckInButton({
         toast.error(result.error ?? "Could not check in.")
         return
       }
-      toast.success("Check-in logged!")
+      if (result.streakMilestone) {
+        toast.success(`Streak milestone: ${result.streakMilestone} days`)
+        setShowConfetti(true)
+        setTimeout(() => setShowConfetti(false), 1200)
+      } else {
+        toast.success("Check-in logged!")
+      }
       router.refresh()
     })
   }
 
   return (
-    <Button
-      onClick={handleCheckIn}
-      disabled={isPending || optimisticDone}
-      variant={optimisticDone ? "secondary" : "default"}
-    >
-      {optimisticDone ? "Done today" : label}
-    </Button>
+    <div className="relative inline-flex">
+      <Button
+        onClick={handleCheckIn}
+        disabled={isPending || optimisticDone}
+        variant={optimisticDone ? "secondary" : "default"}
+      >
+        {optimisticDone ? "Done today" : label}
+      </Button>
+      {showConfetti ? <ConfettiBurst /> : null}
+    </div>
   )
 }
