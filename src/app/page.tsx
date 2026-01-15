@@ -23,34 +23,48 @@ export default async function Home() {
           </Button>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-6 pb-20 pt-12">
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-14 px-6 pb-20 pt-12">
         <section className="grid gap-10 md:grid-cols-2 md:items-center">
           <div>
             <div className="inline-flex items-center rounded-full border bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
-              Built for science teams and accountability buddies
+              Accountability, simplified
             </div>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">
-              Make progress visible. Keep each other consistent.
-          </h1>
+              A clean way to keep habits consistent with friends.
+            </h1>
             <p className="mt-5 text-lg text-muted-foreground">
-              GoalGrid turns daily habits and weekly targets into a shared
-              scoreboard. One‑tap check‑ins, streaks, and simple social pressure
-              keep you on track.
+              GoalGrid makes progress visible with one-tap check-ins, weekly
+              targets, and a shared group feed. No clutter, just momentum.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg">
                 <Link href="/auth/signup">Create your account</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/auth/signin">I already have one</Link>
+                <Link href="/auth/signin">Sign in</Link>
               </Button>
             </div>
             <div className="mt-6 text-sm text-muted-foreground">
-              Small groups, big consistency. No noise, just momentum.
+              Start solo, then invite your group when you’re ready.
             </div>
           </div>
           <div className="rounded-3xl border bg-card p-6 shadow-sm">
-            <div className="flex flex-col gap-4">
+            <div className="space-y-4">
+              <div className="rounded-2xl border bg-background p-4">
+                <div className="text-sm text-muted-foreground">Today</div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-sm font-medium">Lab Notes</span>
+                  <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-xs text-emerald-600">
+                    Done
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-sm font-medium">Experiments</span>
+                  <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+                    Not yet
+                  </span>
+                </div>
+              </div>
               <div className="rounded-2xl border bg-background p-4">
                 <div className="text-sm text-muted-foreground">This week</div>
                 <div className="mt-2 text-3xl font-semibold">86 points</div>
@@ -59,40 +73,6 @@ export default async function Home() {
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
                   +12 bonus for 7-day streak
-                </div>
-              </div>
-              <div className="rounded-2xl border bg-background p-4">
-                <div className="text-sm text-muted-foreground">
-                  Accountability crew
-                </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-sm font-medium">Lab Notes</span>
-                  <span className="text-xs text-muted-foreground">
-                    4/5 check-ins
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-sm font-medium">Experiments</span>
-                  <span className="text-xs text-muted-foreground">
-                    2/3 check-ins
-                  </span>
-                </div>
-              </div>
-              <div className="rounded-2xl border bg-background p-4">
-                <div className="text-sm text-muted-foreground">
-                  Today&apos;s status
-                </div>
-                <div className="mt-3 flex items-center justify-between text-sm">
-                  <span>Check in once</span>
-                  <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-xs text-emerald-600">
-                    Done
-                  </span>
-                </div>
-                <div className="mt-2 flex items-center justify-between text-sm">
-                  <span>Weekly target</span>
-                  <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
-                    Not yet
-                  </span>
                 </div>
               </div>
             </div>
@@ -104,23 +84,20 @@ export default async function Home() {
             {
               title: "One-tap check-ins",
               description:
-                "Log habits fast. Daily and weekly goals share the same easy flow.",
+                "Daily or weekly goals, same fast flow. Log progress in seconds.",
             },
             {
-              title: "Visible momentum",
+              title: "Group accountability",
               description:
-                "Streaks, points, and weekly targets keep effort visible and motivating.",
+                "See who’s on track today and keep your crew motivated.",
             },
             {
-              title: "Accountability built in",
+              title: "Streaks + targets",
               description:
-                "See who’s on track today and send a quick nudge when needed.",
+                "Weekly targets and streaks make consistency feel rewarding.",
             },
           ].map((item) => (
-            <div
-              key={item.title}
-              className="rounded-2xl border bg-card p-6"
-            >
+            <div key={item.title} className="rounded-2xl border bg-card p-6">
               <div className="text-lg font-semibold">{item.title}</div>
               <div className="mt-2 text-sm text-muted-foreground">
                 {item.description}
@@ -129,38 +106,42 @@ export default async function Home() {
           ))}
         </section>
 
-        <section className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
-          <div className="rounded-3xl border bg-card p-8">
-            <h2 className="text-2xl font-semibold">How it works</h2>
-            <ol className="mt-5 space-y-4 text-sm text-muted-foreground">
-              <li className="flex items-start gap-3">
-                <span className="mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
-                  1
-                </span>
-                Create a small group and pick goals (daily or weekly targets).
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
-                  2
-                </span>
-                Check in with one tap. Streaks and points update instantly.
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
-                  3
-                </span>
-                Use the group dashboard to see who’s on track each day.
-              </li>
-            </ol>
-          </div>
-          <div className="rounded-3xl border bg-card p-8">
-            <h3 className="text-lg font-semibold">Teams love GoalGrid</h3>
-            <p className="mt-4 text-sm text-muted-foreground">
-              “Our lab finally has a lightweight way to keep everyone consistent.
-              The daily check-in is frictionless, and the weekly scoreboard keeps
-              us honest.”
-            </p>
-            <div className="mt-6 text-sm font-medium">— Research team lead</div>
+        <section className="rounded-3xl border bg-card p-8">
+          <h2 className="text-2xl font-semibold">How it works</h2>
+          <div className="mt-6 grid gap-4 text-sm text-muted-foreground md:grid-cols-3">
+            <div className="rounded-2xl border bg-background p-4">
+              <div className="text-xs uppercase text-muted-foreground">
+                Step 1
+              </div>
+              <div className="mt-2 text-sm font-medium text-foreground">
+                Create goals
+              </div>
+              <p className="mt-2">
+                Pick daily habits or weekly targets that matter.
+              </p>
+            </div>
+            <div className="rounded-2xl border bg-background p-4">
+              <div className="text-xs uppercase text-muted-foreground">
+                Step 2
+              </div>
+              <div className="mt-2 text-sm font-medium text-foreground">
+                Check in fast
+              </div>
+              <p className="mt-2">
+                One tap logs your progress and keeps streaks alive.
+              </p>
+            </div>
+            <div className="rounded-2xl border bg-background p-4">
+              <div className="text-xs uppercase text-muted-foreground">
+                Step 3
+              </div>
+              <div className="mt-2 text-sm font-medium text-foreground">
+                Stay accountable
+              </div>
+              <p className="mt-2">
+                Share progress with friends and keep momentum high.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -169,7 +150,7 @@ export default async function Home() {
             Ready to build consistency together?
           </h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            Start free, invite your friends, and feel the momentum this week.
+            Start free, invite your friends, and build momentum this week.
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Button asChild size="lg">
@@ -189,7 +170,7 @@ export default async function Home() {
             <span>Privacy</span>
             <span>Contact</span>
             <span>Terms</span>
-        </div>
+          </div>
         </div>
       </footer>
     </div>
