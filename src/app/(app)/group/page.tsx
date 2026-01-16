@@ -19,7 +19,6 @@ import { RemindButton } from "@/components/remind-button"
 import { GroupSetup } from "@/components/group-setup"
 import { InviteLinkCard } from "@/components/invite-link-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CheckCircle2, AlertCircle } from "lucide-react"
 
 export default async function GroupPage() {
   const session = await getServerSession(authOptions)
@@ -85,7 +84,8 @@ export default async function GroupPage() {
         // Compute streaks
         const dailyStreak = computeDailyStreak(
           summarizeDailyCheckIns(checkIns),
-          todayKey
+          todayKey,
+          member.user.timezone
         )
         const weeklyStreak =
           goal.cadenceType === "WEEKLY" && goal.weeklyTarget
@@ -131,7 +131,8 @@ export default async function GroupPage() {
 
       const dailyStreak = computeDailyStreak(
         summarizeDailyCheckIns(checkIns),
-        userTodayKey
+        userTodayKey,
+        member.user.timezone
       )
 
       totalPoints += computeWeeklyPoints({

@@ -45,8 +45,8 @@ export default async function GoalDetailPage({
   const todayDone = checkIns.some((check) => check.localDateKey === todayKey)
 
   const dateKeys = summarizeDailyCheckIns(checkIns)
-  const currentDailyStreak = computeDailyStreak(dateKeys, todayKey)
-  const bestDailyStreak = computeBestDailyStreak(dateKeys)
+  const currentDailyStreak = computeDailyStreak(dateKeys, todayKey, user.timezone)
+  const bestDailyStreak = computeBestDailyStreak(dateKeys, user.timezone)
 
   const weeklyCounts = summarizeWeeklyCheckIns(checkIns)
   const weeklyStreak =

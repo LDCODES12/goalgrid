@@ -73,7 +73,8 @@ export default async function DashboardPage() {
 
     const dailyStreak = computeDailyStreak(
       summarizeDailyCheckIns(checkIns),
-      todayKey
+      todayKey,
+      user.timezone
     )
     const weeklyCounts = summarizeWeeklyCheckIns(checkIns)
     const weeklyStreak =

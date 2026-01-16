@@ -11,26 +11,33 @@ type GoalConfig = {
 
 const streakMilestones = [7, 14, 30]
 
-export function computeDailyStreak(checkInDateKeys: string[], todayKey: string) {
+export function computeDailyStreak(
+  checkInDateKeys: string[],
+  todayKey: string,
+  timeZone: string = "UTC"
+) {
   const set = new Set(checkInDateKeys)
   let streak = 0
   let cursor = todayKey
   while (set.has(cursor)) {
     streak += 1
     const cursorDate = parseISO(cursor)
-    cursor = getLocalDateKey(subDays(cursorDate, 1), "UTC")
+    cursor = getLocalDateKey(subDays(cursorDate, 1), timeZone)
   }
   return streak
 }
 
-export function computeBestDailyStreak(checkInDateKeys: string[]) {
+export function computeBestDailyStreak(
+  checkInDateKeys: string[],
+  timeZone: string = "UTC"
+) {
   if (!checkInDateKeys.length) return 0
   const sorted = [...new Set(checkInDateKeys)].sort()
   let best = 1
   let current = 1
   for (let i = 1; i < sorted.length; i += 1) {
     const prev = parseISO(sorted[i - 1])
-    const expected = getLocalDateKey(addDays(prev, 1), "UTC")
+    const expected = getLocalDateKey(addDays(prev, 1), timeZone)
     if (sorted[i] === expected) {
       current += 1
       best = Math.max(best, current)

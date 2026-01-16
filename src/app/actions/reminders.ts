@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { getServerSession } from "next-auth"
+import { subHours } from "date-fns"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
@@ -26,6 +27,18 @@ export async function sendReminderAction({
     where: { userId: recipientId, groupId: membership.groupId },
   })
   if (!recipientMembership) return { ok: false, error: "User not in your group." }
+
+  // Rate limit: max 1 reminder per recipient per 24 hours
+  const recentReminder = await prisma.reminder.findFirst({
+    where: {
+      senderId: session.user.id,
+      recipientId,
+      createdAt: { gte: subHours(new Date(), 24) },
+    },
+  })
+  if (recentReminder) {
+    return { ok: false, error: "Already sent a reminder in the last 24 hours." }
+  }
 
   await prisma.reminder.create({
     data: {

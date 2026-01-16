@@ -73,7 +73,8 @@ export default async function GoalsPage() {
               )
               const streak = computeDailyStreak(
                 summarizeDailyCheckIns(checkIns),
-                todayKey
+                todayKey,
+                user.timezone
               )
 
               return (

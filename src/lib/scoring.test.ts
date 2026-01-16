@@ -16,7 +16,7 @@ describe("streak logic", () => {
       getLocalDateKey(subDays(today, 1), tz),
       getLocalDateKey(subDays(today, 2), tz),
     ]
-    const streak = computeDailyStreak(keys, getLocalDateKey(today, tz))
+    const streak = computeDailyStreak(keys, getLocalDateKey(today, tz), tz)
     expect(streak).toBe(3)
   })
 

@@ -25,19 +25,10 @@ export async function checkInGoalAction(formData: FormData) {
   const goal = await prisma.goal.findFirst({
     where: {
       id: parsed.data.goalId,
-      OR: [
-        { ownerId: session.user.id },
-        {
-          group: {
-            members: {
-              some: { userId: session.user.id },
-            },
-          },
-        },
-      ],
+      ownerId: session.user.id,  // Users can only check in to their own goals
     },
   })
-  if (!goal) return { ok: false, error: "Goal not found." }
+  if (!goal) return { ok: false, error: "Goal not found or not yours." }
 
   const now = new Date()
   const localDateKey = getLocalDateKey(now, user.timezone)
@@ -75,7 +66,8 @@ export async function checkInGoalAction(formData: FormData) {
     })
     const streak = computeDailyStreak(
       summarizeDailyCheckIns(checkIns),
-      localDateKey
+      localDateKey,
+      user.timezone
     )
     if ([7, 14, 30].includes(streak)) {
       streakMilestone = streak

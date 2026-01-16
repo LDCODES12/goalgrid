@@ -144,6 +144,11 @@ export async function leaveGroupAction() {
   })
 
   await prisma.$transaction(async (tx) => {
+    // Detach user's goals from the group before leaving
+    await tx.goal.updateMany({
+      where: { ownerId: session.user.id, groupId: membership.groupId },
+      data: { groupId: null },
+    })
     await tx.groupMember.delete({ where: { id: membership.id } })
     if (remainingMembers <= 1) {
       await tx.group.delete({ where: { id: membership.groupId } })
