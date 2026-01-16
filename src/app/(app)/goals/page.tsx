@@ -67,8 +67,6 @@ export default async function GoalsPage() {
               const isWeekly =
                 goal.cadenceType === "WEEKLY" && goal.weeklyTarget != null
               const weekTarget = isWeekly ? weeklyTarget : 7
-              const todayCount = todayDone ? 1 : 0
-              const todayProgress = todayDone ? 100 : 0
               const weekProgress = Math.min(
                 100,
                 Math.round((weekCheckIns.length / weekTarget) * 100)
@@ -107,17 +105,20 @@ export default async function GoalsPage() {
                   </div>
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Today</span>
-                      <span>{todayCount}/1</span>
-                    </div>
-                    <Progress value={todayProgress} />
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>This week</span>
                       <span>
                         {weekCheckIns.length}/{weekTarget}
                       </span>
                     </div>
                     <Progress value={weekProgress} />
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span
+                        className={`h-2 w-2 rounded-full ${
+                          todayDone ? "bg-emerald-500" : "bg-muted"
+                        }`}
+                      />
+                      {todayDone ? "Checked in today" : "Not checked in today"}
+                    </div>
                   </div>
                 </div>
               )
