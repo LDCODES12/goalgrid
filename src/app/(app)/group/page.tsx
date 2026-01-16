@@ -282,7 +282,7 @@ export default async function GroupPage() {
                       <div>+ {entry.goals.length - 2} more</div>
                     ) : null}
                   </div>
-                  {!entry.checkedInToday ? (
+                  {entry.goals.some((goal) => !goal.checkedToday) ? (
                     <div className="mt-2">
                       <RemindButton name={entry.member.user.name} />
                     </div>
