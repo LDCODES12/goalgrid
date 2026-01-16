@@ -61,11 +61,13 @@ export default async function GoalsPage() {
               const checkIns = goal.checkIns.filter(
                 (check) => check.userId === user.id
               )
-              const todayCheckIn = checkIns.find(
+              const dailyTarget = goal.dailyTarget ?? 1
+              const todayCheckIns = checkIns.filter(
                 (check) => check.localDateKey === todayKey
               )
-              const todayDone = !!todayCheckIn
-              const todayPartial = todayCheckIn?.isPartial ?? false
+              const todayCount = todayCheckIns.length
+              const todayDone = todayCount >= dailyTarget
+              const todayPartial = todayCheckIns.length > 0 && todayCheckIns[0]?.isPartial && dailyTarget === 1
               const weekCheckIns = checkIns.filter(
                 (check) => check.weekKey === weekKey
               )
@@ -82,7 +84,8 @@ export default async function GoalsPage() {
                 dateKeys,
                 todayKey,
                 user.timezone,
-                goal.streakFreezes
+                goal.streakFreezes,
+                dailyTarget
               )
               const consistency = computeConsistencyPercentage(
                 dateKeys,
@@ -90,7 +93,7 @@ export default async function GoalsPage() {
                 user.timezone,
                 30,
                 goal.createdAt,
-                goal.dailyTarget ?? 1
+                dailyTarget
               )
 
               return (

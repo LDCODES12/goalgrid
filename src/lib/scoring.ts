@@ -11,15 +11,39 @@ type GoalConfig = {
 
 const streakMilestones = [7, 14, 30]
 
+/**
+ * Helper: Count check-ins per date
+ */
+function countByDate(checkInDateKeys: string[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const key of checkInDateKeys) {
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return counts
+}
+
+/**
+ * Helper: Check if a day is "complete" based on target
+ */
+function isDayComplete(counts: Map<string, number>, dateKey: string, dailyTarget: number): boolean {
+  return (counts.get(dateKey) ?? 0) >= dailyTarget
+}
+
+/**
+ * Compute current daily streak (consecutive days of completion starting from today)
+ * For multi-target goals, only counts days where target was fully met
+ */
 export function computeDailyStreak(
   checkInDateKeys: string[],
   todayKey: string,
-  timeZone: string = "UTC"
+  timeZone: string = "UTC",
+  dailyTarget: number = 1
 ) {
-  const set = new Set(checkInDateKeys)
+  const counts = countByDate(checkInDateKeys)
   let streak = 0
   let cursor = todayKey
-  while (set.has(cursor)) {
+  
+  while (isDayComplete(counts, cursor, dailyTarget)) {
     streak += 1
     const cursorDate = parseISO(cursor)
     cursor = getLocalDateKey(subDays(cursorDate, 1), timeZone)
@@ -27,18 +51,34 @@ export function computeDailyStreak(
   return streak
 }
 
+/**
+ * Compute best daily streak ever achieved
+ * For multi-target goals, only counts days where target was fully met
+ */
 export function computeBestDailyStreak(
   checkInDateKeys: string[],
-  timeZone: string = "UTC"
+  timeZone: string = "UTC",
+  dailyTarget: number = 1
 ) {
   if (!checkInDateKeys.length) return 0
-  const sorted = [...new Set(checkInDateKeys)].sort()
+  
+  const counts = countByDate(checkInDateKeys)
+  
+  // Get unique dates where target was met, sorted
+  const completeDays = [...counts.entries()]
+    .filter(([_, count]) => count >= dailyTarget)
+    .map(([date]) => date)
+    .sort()
+  
+  if (completeDays.length === 0) return 0
+  
   let best = 1
   let current = 1
-  for (let i = 1; i < sorted.length; i += 1) {
-    const prev = parseISO(sorted[i - 1])
+  
+  for (let i = 1; i < completeDays.length; i += 1) {
+    const prev = parseISO(completeDays[i - 1])
     const expected = getLocalDateKey(addDays(prev, 1), timeZone)
-    if (sorted[i] === expected) {
+    if (completeDays[i] === expected) {
       current += 1
       best = Math.max(best, current)
     } else {
@@ -59,12 +99,9 @@ export function computeWeeklyStreak(
   while (true) {
     const key = getWeekKey(cursor, timeZone)
     const count = weekCounts[key] ?? 0
-    if (count >= weeklyTarget) {
-      streak += 1
-      cursor = addDays(cursor, -7)
-    } else {
-      break
-    }
+    if (count < weeklyTarget) break
+    streak += 1
+    cursor = subDays(cursor, 7)
   }
   return streak
 }
@@ -72,59 +109,27 @@ export function computeWeeklyStreak(
 export function computeWeeklyPoints({
   goal,
   checkInsThisWeek,
-  currentStreak,
-  timeZone,
-  today,
+  dailyStreak,
 }: {
   goal: GoalConfig
-  checkInsThisWeek: { localDateKey: string }[]
-  currentStreak: number
-  timeZone: string
-  today: Date
+  checkInsThisWeek: number
+  dailyStreak: number
 }) {
-  const pointsPer = goal.pointsPerCheckIn
-  const weekKey = getWeekKey(today, timeZone)
-  const weekEnd = getWeekEnd(today, timeZone)
-  const weekEndKey = getLocalDateKey(weekEnd, timeZone)
+  let points = checkInsThisWeek * goal.pointsPerCheckIn
 
-  if (goal.cadenceType === "WEEKLY" && goal.weeklyTarget) {
-    const totalCheckIns = checkInsThisWeek.length
-    const capped = Math.min(totalCheckIns, goal.weeklyTarget)
-    let bonus = 0
-
-    if (totalCheckIns >= goal.weeklyTarget) {
-      const sorted = [...checkInsThisWeek].sort((a, b) =>
-        a.localDateKey.localeCompare(b.localDateKey)
-      )
-      let completedOn = sorted[sorted.length - 1]?.localDateKey
-      let count = 0
-      for (const item of sorted) {
-        count += 1
-        if (count >= goal.weeklyTarget) {
-          completedOn = item.localDateKey
-          break
-        }
-      }
-      if (completedOn && completedOn < weekEndKey) {
-        bonus += goal.weeklyTargetBonus
-      }
-    }
-
-    return capped * pointsPer + bonus
+  if (
+    goal.cadenceType === "WEEKLY" &&
+    goal.weeklyTarget != null &&
+    checkInsThisWeek >= goal.weeklyTarget
+  ) {
+    points += goal.weeklyTargetBonus
   }
 
-  const total = checkInsThisWeek.length
-  let bonus = 0
-  for (const milestone of streakMilestones) {
-    if (currentStreak >= milestone) {
-      const milestoneDate = subDays(today, currentStreak - milestone)
-      if (getWeekKey(milestoneDate, timeZone) === weekKey) {
-        bonus += goal.streakBonus
-      }
-    }
+  if (streakMilestones.includes(dailyStreak)) {
+    points += goal.streakBonus
   }
 
-  return total * pointsPer + bonus
+  return points
 }
 
 export function summarizeWeeklyCheckIns(
@@ -144,10 +149,9 @@ export function summarizeDailyCheckIns(
 
 /**
  * Compute consistency percentage over the last N days
- * Returns a value 0-100 representing % of days with check-ins
+ * Returns a value 0-100 representing % of days where dailyTarget was met
  * 
  * If goalCreatedAt is provided, only counts days since goal creation
- * If dailyTarget > 1, counts check-ins per day and requires target to be met
  */
 export function computeConsistencyPercentage(
   checkInDateKeys: string[],
@@ -157,11 +161,7 @@ export function computeConsistencyPercentage(
   goalCreatedAt?: Date,
   dailyTarget: number = 1
 ): number {
-  // Count occurrences of each date key
-  const countByDate = new Map<string, number>()
-  for (const key of checkInDateKeys) {
-    countByDate.set(key, (countByDate.get(key) ?? 0) + 1)
-  }
+  const counts = countByDate(checkInDateKeys)
   
   let completed = 0
   let totalDays = 0
@@ -179,10 +179,8 @@ export function computeConsistencyPercentage(
     }
     
     totalDays++
-    const countOnDay = countByDate.get(cursor) ?? 0
     
-    // For daily targets > 1, check if target was met
-    if (countOnDay >= dailyTarget) {
+    if (isDayComplete(counts, cursor, dailyTarget)) {
       completed++
     }
     
@@ -195,34 +193,37 @@ export function computeConsistencyPercentage(
 }
 
 /**
- * Compute streak with grace period - allows 1 miss without breaking streak
- * "Never miss twice" rule: one gap is forgiven, two consecutive gaps breaks streak
+ * Compute streak with grace period - allows N misses without breaking streak
+ * "Never miss twice" rule: consecutive misses beyond allowedFreezes breaks streak
+ * 
+ * For multi-target goals, a day is only "complete" if the full target is met
  */
 export function computeGracefulStreak(
   checkInDateKeys: string[],
   todayKey: string,
   timeZone: string,
-  allowedFreezes: number = 1
+  allowedFreezes: number = 1,
+  dailyTarget: number = 1
 ): { currentStreak: number; freezesUsed: number; isAtRisk: boolean } {
-  const set = new Set(checkInDateKeys)
+  const counts = countByDate(checkInDateKeys)
   let streak = 0
   let freezesUsed = 0
   let consecutiveMisses = 0
   let cursor = todayKey
   let isAtRisk = false
 
-  // Check if today is done
-  const todayDone = set.has(todayKey)
+  // Check if today is done (target met)
+  const todayDone = isDayComplete(counts, todayKey, dailyTarget)
   if (!todayDone) {
     // Check yesterday - if yesterday was done, streak is at risk but not broken
     const yesterdayKey = getLocalDateKey(subDays(parseISO(todayKey), 1), timeZone)
-    if (set.has(yesterdayKey)) {
+    if (isDayComplete(counts, yesterdayKey, dailyTarget)) {
       isAtRisk = true
     }
   }
 
   while (true) {
-    if (set.has(cursor)) {
+    if (isDayComplete(counts, cursor, dailyTarget)) {
       streak++
       consecutiveMisses = 0
     } else {
@@ -245,7 +246,7 @@ export function computeGracefulStreak(
 }
 
 /**
- * Get soft failure message based on consistency and recent activity
+ * Get a soft failure message based on recent performance
  */
 export function getSoftFailureMessage(
   consistency: number,
@@ -253,39 +254,33 @@ export function getSoftFailureMessage(
   lastNDays: number = 30
 ): string | null {
   if (consistency >= 80) {
-    return null // No failure message needed - doing great!
+    return `Great job! You've hit ${consistency}% consistency over the last ${lastNDays} days.`
   }
-  
-  if (consistency >= 60) {
-    return `You've completed ${lastNDaysCompleted} of the last ${lastNDays} days. Keep it up!`
+  if (consistency >= 50) {
+    return `You've completed ${lastNDaysCompleted} of the last ${lastNDays} days. Keep building momentum!`
   }
-  
-  if (consistency >= 40) {
-    return `${lastNDaysCompleted} of ${lastNDays} days completed. Every day is a fresh start.`
-  }
-  
   if (lastNDaysCompleted > 0) {
-    return `You showed up ${lastNDaysCompleted} times recently. That counts!`
+    return `You've completed ${lastNDaysCompleted} days recently. Every check-in counts!`
   }
-  
-  return "Ready to get back on track? Start with just today."
+  return null
 }
 
 /**
- * Count completions in the last N days
+ * Count completions in last N days
  */
 export function countRecentCompletions(
   checkInDateKeys: string[],
   todayKey: string,
   timeZone: string,
-  days: number = 30
+  days: number = 30,
+  dailyTarget: number = 1
 ): number {
-  const set = new Set(checkInDateKeys)
+  const counts = countByDate(checkInDateKeys)
   let completed = 0
   let cursor = todayKey
 
   for (let i = 0; i < days; i++) {
-    if (set.has(cursor)) {
+    if (isDayComplete(counts, cursor, dailyTarget)) {
       completed++
     }
     const cursorDate = parseISO(cursor)

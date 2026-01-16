@@ -97,7 +97,8 @@ export async function checkInGoalAction(formData: FormData) {
     const streak = computeDailyStreak(
       summarizeDailyCheckIns(checkIns),
       localDateKey,
-      user.timezone
+      user.timezone,
+      goal.dailyTarget ?? 1
     )
     if ([7, 14, 30].includes(streak)) {
       streakMilestone = streak

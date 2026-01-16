@@ -48,18 +48,20 @@ export default async function GoalDetailPage({
 
   const checkIns = goal.checkIns.filter((check) => check.userId === user.id)
   const checkInsThisWeek = checkIns.filter((check) => check.weekKey === weekKey)
-  const todayCheckIn = checkIns.find((check) => check.localDateKey === todayKey)
-  const todayDone = !!todayCheckIn
-  const todayPartial = todayCheckIn?.isPartial ?? false
+  const todayCheckIns = checkIns.filter((check) => check.localDateKey === todayKey)
+  const dailyTarget = goal.dailyTarget ?? 1
+  const todayCount = todayCheckIns.length
+  const todayDone = todayCount >= dailyTarget
+  const todayPartial = todayCheckIns.length > 0 && todayCheckIns[0]?.isPartial && dailyTarget === 1
 
   const dateKeys = summarizeDailyCheckIns(checkIns)
-  const currentDailyStreak = computeDailyStreak(dateKeys, todayKey, user.timezone)
-  const bestDailyStreak = computeBestDailyStreak(dateKeys, user.timezone)
+  const currentDailyStreak = computeDailyStreak(dateKeys, todayKey, user.timezone, dailyTarget)
+  const bestDailyStreak = computeBestDailyStreak(dateKeys, user.timezone, dailyTarget)
   const consistency = computeConsistencyPercentage(
-    dateKeys, todayKey, user.timezone, 30, goal.createdAt, goal.dailyTarget ?? 1
+    dateKeys, todayKey, user.timezone, 30, goal.createdAt, dailyTarget
   )
-  const gracefulStreak = computeGracefulStreak(dateKeys, todayKey, user.timezone, goal.streakFreezes)
-  const recentCompletions = countRecentCompletions(dateKeys, todayKey, user.timezone, 30)
+  const gracefulStreak = computeGracefulStreak(dateKeys, todayKey, user.timezone, goal.streakFreezes, dailyTarget)
+  const recentCompletions = countRecentCompletions(dateKeys, todayKey, user.timezone, 30, dailyTarget)
   const softMessage = !todayDone ? getSoftFailureMessage(consistency, recentCompletions, 30) : null
 
   const weeklyCounts = summarizeWeeklyCheckIns(checkIns)

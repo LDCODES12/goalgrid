@@ -82,18 +82,20 @@ export default async function GroupPage() {
         const todayCheckIn = checkIns.find(
           (check) => check.localDateKey === todayKey
         )
-        const checkedToday = !!todayCheckIn
+        const dailyTarget = goal.dailyTarget ?? 1
+        const todayCount = checkIns.filter((check) => check.localDateKey === todayKey).length
+        const checkedToday = todayCount >= dailyTarget
         const isPartial = todayCheckIn?.isPartial ?? false
         const weekCount = checkIns.filter((check) => check.weekKey === weekKey)
           .length
 
         // Compute streaks and consistency
         const dateKeys = summarizeDailyCheckIns(checkIns)
-        const dailyStreak = computeDailyStreak(dateKeys, todayKey, member.user.timezone)
+        const dailyStreak = computeDailyStreak(dateKeys, todayKey, member.user.timezone, dailyTarget)
         const consistency = computeConsistencyPercentage(
-          dateKeys, todayKey, member.user.timezone, 30, goal.createdAt, goal.dailyTarget ?? 1
+          dateKeys, todayKey, member.user.timezone, 30, goal.createdAt, dailyTarget
         )
-        const gracefulStreak = computeGracefulStreak(dateKeys, todayKey, member.user.timezone, goal.streakFreezes)
+        const gracefulStreak = computeGracefulStreak(dateKeys, todayKey, member.user.timezone, goal.streakFreezes, dailyTarget)
         
         const weeklyStreak =
           goal.cadenceType === "WEEKLY" && goal.weeklyTarget
@@ -135,23 +137,22 @@ export default async function GroupPage() {
       const checkInsThisWeek = checkIns.filter(
         (check) => check.weekKey === userWeekKey
       )
-      const todayDone = checkIns.some(
-        (check) => check.localDateKey === userTodayKey
-      )
+      const goalDailyTarget = goal.dailyTarget ?? 1
+      const todayCount = checkIns.filter((check) => check.localDateKey === userTodayKey).length
+      const todayDone = todayCount >= goalDailyTarget
       if (todayDone) completedToday = true
 
       const dailyStreak = computeDailyStreak(
         summarizeDailyCheckIns(checkIns),
         userTodayKey,
-        member.user.timezone
+        member.user.timezone,
+        goalDailyTarget
       )
 
       totalPoints += computeWeeklyPoints({
         goal,
-        checkInsThisWeek,
-        currentStreak: dailyStreak,
-        timeZone: member.user.timezone,
-        today: new Date(),
+        checkInsThisWeek: checkInsThisWeek.length,
+        dailyStreak,
       })
 
       if (goal.cadenceType === "WEEKLY" && goal.weeklyTarget) {

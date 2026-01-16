@@ -40,13 +40,6 @@ describe("streak logic", () => {
 
 describe("weekly scoring", () => {
   it("caps points and applies early bonus for weekly targets", () => {
-    const tz = "America/Chicago"
-    const today = new Date("2025-01-15T18:00:00Z")
-    const weekKey = getWeekKey(today, tz)
-    const checkInsThisWeek = [0, 1, 2, 3].map((offset) => ({
-      localDateKey: getLocalDateKey(addDays(today, offset), tz),
-      weekKey,
-    }))
     const points = computeWeeklyPoints({
       goal: {
         cadenceType: "WEEKLY",
@@ -55,12 +48,11 @@ describe("weekly scoring", () => {
         weeklyTargetBonus: 20,
         streakBonus: 5,
       },
-      checkInsThisWeek,
-      currentStreak: 0,
-      timeZone: tz,
-      today,
+      checkInsThisWeek: 4, // 4 check-ins this week
+      dailyStreak: 0,
     })
-    expect(points).toBe(50)
+    // 4 check-ins * 10 pts + 20 bonus for meeting target = 60
+    expect(points).toBe(60)
   })
 })
 
@@ -114,8 +106,9 @@ describe("graceful failure", () => {
   })
 
   it("returns soft message based on consistency", () => {
-    // High consistency - no message
-    expect(getSoftFailureMessage(85, 26, 30)).toBeNull()
+    // High consistency - celebratory message
+    const high = getSoftFailureMessage(85, 26, 30)
+    expect(high).toContain("85%")
     // Medium consistency - encouraging message
     const medium = getSoftFailureMessage(60, 18, 30)
     expect(medium).toContain("18")

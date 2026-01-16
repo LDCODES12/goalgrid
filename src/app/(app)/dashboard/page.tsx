@@ -80,13 +80,13 @@ export default async function DashboardPage() {
     )
 
     const dateKeys = summarizeDailyCheckIns(checkIns)
-    const dailyStreak = computeDailyStreak(dateKeys, todayKey, user.timezone)
-    const bestStreak = computeBestDailyStreak(dateKeys, user.timezone)
+    const dailyStreak = computeDailyStreak(dateKeys, todayKey, user.timezone, dailyTarget)
+    const bestStreak = computeBestDailyStreak(dateKeys, user.timezone, dailyTarget)
     const consistency = computeConsistencyPercentage(
       dateKeys, todayKey, user.timezone, 30, goal.createdAt, dailyTarget
     )
-    const recentCompletions = countRecentCompletions(dateKeys, todayKey, user.timezone, 30)
-    const gracefulStreak = computeGracefulStreak(dateKeys, todayKey, user.timezone, goal.streakFreezes)
+    const recentCompletions = countRecentCompletions(dateKeys, todayKey, user.timezone, 30, dailyTarget)
+    const gracefulStreak = computeGracefulStreak(dateKeys, todayKey, user.timezone, goal.streakFreezes, dailyTarget)
     
     const weeklyCounts = summarizeWeeklyCheckIns(checkIns)
     const weeklyStreak =
@@ -138,10 +138,8 @@ export default async function DashboardPage() {
           weeklyTargetBonus: item.goal.weeklyTargetBonus,
           streakBonus: item.goal.streakBonus,
         },
-        checkInsThisWeek: item.checkInsThisWeek,
-        currentStreak: item.dailyStreak,
-        timeZone: user.timezone,
-        today: now,
+        checkInsThisWeek: item.checkInsThisWeek.length,
+        dailyStreak: item.dailyStreak,
       })
     )
   }, 0)
@@ -159,10 +157,8 @@ export default async function DashboardPage() {
           weeklyTargetBonus: item.goal.weeklyTargetBonus,
           streakBonus: item.goal.streakBonus,
         },
-        checkInsThisWeek: lastWeekCheckIns,
-        currentStreak: item.dailyStreak,
-        timeZone: user.timezone,
-        today: subDays(now, 7),
+        checkInsThisWeek: lastWeekCheckIns.length,
+        dailyStreak: item.dailyStreak,
       })
     )
   }, 0)
