@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,11 @@ import { Label } from "@/components/ui/label"
 
 export default function SignInPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Get callback URL from query params (for invite links, etc.)
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard"
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -27,7 +31,7 @@ export default function SignInPage() {
       toast.error("Invalid email or password.")
       return
     }
-    router.push("/dashboard")
+    router.push(callbackUrl)
     router.refresh()
   }
 
@@ -55,7 +59,13 @@ export default function SignInPage() {
         </form>
         <p className="mt-4 text-sm text-muted-foreground">
           New here?{" "}
-          <Link href="/auth/signup" className="text-foreground underline">
+          <Link 
+            href={callbackUrl !== "/dashboard" 
+              ? `/auth/signup?callbackUrl=${encodeURIComponent(callbackUrl)}` 
+              : "/auth/signup"
+            } 
+            className="text-foreground underline"
+          >
             Create an account
           </Link>
         </p>

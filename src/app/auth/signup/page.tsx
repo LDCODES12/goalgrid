@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,11 @@ import { signUpAction } from "@/app/actions/auth"
 
 export default function SignUpPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Get callback URL from query params (for invite links, etc.)
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard"
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -35,7 +39,7 @@ export default function SignUpPage() {
       router.push("/auth/signin")
       return
     }
-    router.push("/dashboard")
+    router.push(callbackUrl)
     router.refresh()
   }
 
@@ -76,7 +80,13 @@ export default function SignUpPage() {
         </form>
         <p className="mt-4 text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/auth/signin" className="text-foreground underline">
+          <Link 
+            href={callbackUrl !== "/dashboard" 
+              ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` 
+              : "/auth/signin"
+            } 
+            className="text-foreground underline"
+          >
             Sign in
           </Link>
         </p>
