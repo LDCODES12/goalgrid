@@ -32,7 +32,7 @@ export async function createGroupAction(formData: FormData) {
     tries += 1
   }
 
-  await prisma.group.create({
+  const group = await prisma.group.create({
     data: {
       name: parsed.data.name,
       inviteCode,
@@ -40,6 +40,11 @@ export async function createGroupAction(formData: FormData) {
         create: { userId: session.user.id, role: "ADMIN" },
       },
     },
+  })
+
+  await prisma.goal.updateMany({
+    where: { ownerId: session.user.id, groupId: null },
+    data: { groupId: group.id },
   })
 
   revalidatePath("/group")
@@ -68,12 +73,18 @@ export async function joinGroupAction(formData: FormData) {
   })
   if (!group) return { ok: false, error: "Invite code not found." }
 
-  await prisma.groupMember.create({
-    data: {
-      userId: session.user.id,
-      groupId: group.id,
-      role: "MEMBER",
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.groupMember.create({
+      data: {
+        userId: session.user.id,
+        groupId: group.id,
+        role: "MEMBER",
+      },
+    })
+    await tx.goal.updateMany({
+      where: { ownerId: session.user.id, groupId: null },
+      data: { groupId: group.id },
+    })
   })
 
   revalidatePath("/group")
@@ -100,12 +111,18 @@ export async function joinGroupByCodeAction(inviteCode: string) {
   })
   if (!group) return { ok: false, error: "Invite code not found." }
 
-  await prisma.groupMember.create({
-    data: {
-      userId: session.user.id,
-      groupId: group.id,
-      role: "MEMBER",
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.groupMember.create({
+      data: {
+        userId: session.user.id,
+        groupId: group.id,
+        role: "MEMBER",
+      },
+    })
+    await tx.goal.updateMany({
+      where: { ownerId: session.user.id, groupId: null },
+      data: { groupId: group.id },
+    })
   })
 
   revalidatePath("/group")
