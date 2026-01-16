@@ -81,6 +81,38 @@ export async function joinGroupAction(formData: FormData) {
   return { ok: true }
 }
 
+export async function joinGroupByCodeAction(inviteCode: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) return { ok: false, error: "Unauthorized" }
+
+  const parsed = joinGroupSchema.safeParse({ inviteCode })
+  if (!parsed.success) return { ok: false, error: "Invalid invite code" }
+
+  const existingMembership = await prisma.groupMember.findFirst({
+    where: { userId: session.user.id },
+  })
+  if (existingMembership) {
+    return { ok: false, error: "You are already in a group." }
+  }
+
+  const group = await prisma.group.findUnique({
+    where: { inviteCode: parsed.data.inviteCode.toUpperCase() },
+  })
+  if (!group) return { ok: false, error: "Invite code not found." }
+
+  await prisma.groupMember.create({
+    data: {
+      userId: session.user.id,
+      groupId: group.id,
+      role: "MEMBER",
+    },
+  })
+
+  revalidatePath("/group")
+  revalidatePath("/dashboard")
+  return { ok: true }
+}
+
 export async function leaveGroupAction() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return { ok: false, error: "Unauthorized" }

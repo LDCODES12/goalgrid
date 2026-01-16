@@ -15,6 +15,7 @@ import { CompletionRing } from "@/components/completion-ring"
 import { CheerButton } from "@/components/cheer-button"
 import { RemindButton } from "@/components/remind-button"
 import { GroupSetup } from "@/components/group-setup"
+import { InviteLinkCard } from "@/components/invite-link-card"
 
 export default async function GroupPage() {
   const session = await getServerSession(authOptions)
@@ -149,6 +150,10 @@ export default async function GroupPage() {
       ? 0
       : Math.round((pulseCheckedIn / sortedLeaderboard.length) * 100)
 
+  const baseUrl =
+    process.env.NEXTAUTH_URL ?? "http://localhost:3000"
+  const inviteUrl = `${baseUrl}/group/join?code=${group.inviteCode}`
+
   return (
     <div className="space-y-6">
       <Card>
@@ -183,6 +188,8 @@ export default async function GroupPage() {
           </div>
         </CardContent>
       </Card>
+
+      <InviteLinkCard inviteUrl={inviteUrl} inviteCode={group.inviteCode} />
 
       <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Card>
