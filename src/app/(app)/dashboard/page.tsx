@@ -484,7 +484,7 @@ export default async function DashboardPage() {
                 ? done >= Math.ceil((weeklyTarget * daysElapsed) / 7)
                 : done >= daysElapsed
 
-              // Status label logic
+              // Status label logic - consistent for both goal types
               let statusLabel: string
               let statusStyle: string
               
@@ -495,10 +495,10 @@ export default async function DashboardPage() {
                 statusLabel = "On track"
                 statusStyle = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
               } else if (!canStillComplete) {
-                statusLabel = isWeeklyGoal ? "Will miss" : `${missedDays}d missed`
+                statusLabel = "Will miss"
                 statusStyle = "bg-red-500/10 text-red-600 dark:text-red-400"
               } else {
-                statusLabel = isWeeklyGoal ? "Can finish" : `${missedDays}d missed`
+                statusLabel = "Behind"
                 statusStyle = "bg-amber-500/10 text-amber-600 dark:text-amber-400"
               }
 
