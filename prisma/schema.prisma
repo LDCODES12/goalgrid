@@ -72,6 +72,7 @@ model Goal {
   pointsPerCheckIn Int          @default(10)
   weeklyTargetBonus Int         @default(20)
   streakBonus      Int          @default(5)
+  streakFreezes    Int          @default(1)  // Allowed freeze days per week
   active           Boolean      @default(true)
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
@@ -94,6 +95,7 @@ model CheckIn {
   timestamp    DateTime @default(now())
   localDateKey String
   weekKey      String
+  isPartial    Boolean  @default(false)  // Partial/mini completion
 
   goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

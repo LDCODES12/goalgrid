@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db"
 import { getLocalDateKey, getWeekKey } from "@/lib/time"
 import {
   computeDailyStreak,
+  computeConsistencyPercentage,
+  computeGracefulStreak,
   summarizeDailyCheckIns,
 } from "@/lib/scoring"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -57,9 +59,11 @@ export default async function GoalsPage() {
               const checkIns = goal.checkIns.filter(
                 (check) => check.userId === user.id
               )
-              const todayDone = checkIns.some(
+              const todayCheckIn = checkIns.find(
                 (check) => check.localDateKey === todayKey
               )
+              const todayDone = !!todayCheckIn
+              const todayPartial = todayCheckIn?.isPartial ?? false
               const weekCheckIns = checkIns.filter(
                 (check) => check.weekKey === weekKey
               )
@@ -71,10 +75,18 @@ export default async function GoalsPage() {
                 100,
                 Math.round((weekCheckIns.length / weekTarget) * 100)
               )
-              const streak = computeDailyStreak(
-                summarizeDailyCheckIns(checkIns),
+              const dateKeys = summarizeDailyCheckIns(checkIns)
+              const gracefulStreak = computeGracefulStreak(
+                dateKeys,
                 todayKey,
-                user.timezone
+                user.timezone,
+                goal.streakFreezes
+              )
+              const consistency = computeConsistencyPercentage(
+                dateKeys,
+                todayKey,
+                user.timezone,
+                30
               )
 
               return (
@@ -84,25 +96,49 @@ export default async function GoalsPage() {
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <Link
-                        href={`/goals/${goal.id}`}
-                        className="text-base font-semibold"
-                      >
-                        {goal.name}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/goals/${goal.id}`}
+                          className="text-base font-semibold"
+                        >
+                          {goal.name}
+                        </Link>
+                        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          {consistency}%
+                        </span>
+                      </div>
                       <div className="mt-1 text-xs text-muted-foreground">
                         {goal.cadenceType === "DAILY"
                           ? "Daily"
                           : `Weekly target: ${goal.weeklyTarget}x`}
                       </div>
-                      <div className="mt-2 flex gap-2">
-                        <Badge variant="secondary">{streak} day streak</Badge>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <span>{gracefulStreak.currentStreak}d streak</span>
+                        {gracefulStreak.freezesUsed > 0 && (
+                          <span className="text-amber-500">
+                            ({gracefulStreak.freezesUsed} freeze)
+                          </span>
+                        )}
+                        {gracefulStreak.isAtRisk && (
+                          <span className="text-amber-500">At risk!</span>
+                        )}
                       </div>
                     </div>
-                    <CheckInButton
-                      goalId={goal.id}
-                      completed={todayDone}
-                    />
+                    <div className="flex items-center gap-2">
+                      {!todayDone && goal.cadenceType === "DAILY" && (
+                        <CheckInButton
+                          goalId={goal.id}
+                          completed={false}
+                          label="Mini"
+                          isPartial={true}
+                        />
+                      )}
+                      <CheckInButton
+                        goalId={goal.id}
+                        completed={todayDone && !todayPartial}
+                        label={todayPartial ? "Upgrade" : "Complete"}
+                      />
+                    </div>
                   </div>
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -115,10 +151,18 @@ export default async function GoalsPage() {
                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                       <span
                         className={`h-2 w-2 rounded-full ${
-                          todayDone ? "bg-emerald-500" : "bg-muted"
+                          todayDone 
+                            ? todayPartial 
+                              ? "bg-amber-500" 
+                              : "bg-emerald-500" 
+                            : "bg-muted"
                         }`}
                       />
-                      {todayDone ? "Completed today" : "Not completed today"}
+                      {todayDone 
+                        ? todayPartial 
+                          ? "Partial completion" 
+                          : "Completed today" 
+                        : "Not completed today"}
                     </div>
                   </div>
                 </div>

@@ -7,6 +7,8 @@ import {
   computeDailyStreak,
   computeWeeklyStreak,
   computeWeeklyPoints,
+  computeConsistencyPercentage,
+  computeGracefulStreak,
   summarizeDailyCheckIns,
   summarizeWeeklyCheckIns,
 } from "@/lib/scoring"
@@ -18,6 +20,8 @@ import { CheerButton } from "@/components/cheer-button"
 import { RemindButton } from "@/components/remind-button"
 import { GroupSetup } from "@/components/group-setup"
 import { InviteLinkCard } from "@/components/invite-link-card"
+import { WeeklySummaryCard } from "@/components/weekly-summary-card"
+import { computeWeeklySummary } from "@/lib/weekly-summary"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default async function GroupPage() {
@@ -75,18 +79,20 @@ export default async function GroupPage() {
         const checkIns = goal.checkIns.filter(
           (check) => check.userId === member.userId
         )
-        const checkedToday = checkIns.some(
+        const todayCheckIn = checkIns.find(
           (check) => check.localDateKey === todayKey
         )
+        const checkedToday = !!todayCheckIn
+        const isPartial = todayCheckIn?.isPartial ?? false
         const weekCount = checkIns.filter((check) => check.weekKey === weekKey)
           .length
 
-        // Compute streaks
-        const dailyStreak = computeDailyStreak(
-          summarizeDailyCheckIns(checkIns),
-          todayKey,
-          member.user.timezone
-        )
+        // Compute streaks and consistency
+        const dateKeys = summarizeDailyCheckIns(checkIns)
+        const dailyStreak = computeDailyStreak(dateKeys, todayKey, member.user.timezone)
+        const consistency = computeConsistencyPercentage(dateKeys, todayKey, member.user.timezone, 30)
+        const gracefulStreak = computeGracefulStreak(dateKeys, todayKey, member.user.timezone, goal.streakFreezes)
+        
         const weeklyStreak =
           goal.cadenceType === "WEEKLY" && goal.weeklyTarget
             ? computeWeeklyStreak(
@@ -100,8 +106,11 @@ export default async function GroupPage() {
         return {
           goal,
           checkedToday,
+          isPartial,
           weekCount,
           dailyStreak,
+          consistency,
+          gracefulStreak,
           weeklyStreak,
         }
       }),
@@ -169,6 +178,27 @@ export default async function GroupPage() {
 
   const pulseCompleted = sortedLeaderboard.filter((entry) => entry.completedToday).length
 
+  // Compute weekly summary
+  const weeklySummaryMembers = group.members.map((member) => ({
+    id: member.userId,
+    name: member.user.name,
+    goals: goals
+      .filter((g) => g.ownerId === member.userId)
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        cadenceType: g.cadenceType,
+        weeklyTarget: g.weeklyTarget,
+        checkIns: g.checkIns
+          .filter((c) => c.userId === member.userId)
+          .map((c) => ({ weekKey: c.weekKey, localDateKey: c.localDateKey })),
+      })),
+  }))
+  const weeklySummary = computeWeeklySummary(
+    weeklySummaryMembers,
+    session.user.id ? "America/Chicago" : "UTC" // Use a default timezone for group view
+  )
+
   const baseUrl =
     process.env.NEXTAUTH_URL ?? "http://localhost:3000"
   const inviteUrl = `${baseUrl}/group/join?code=${group.inviteCode}`
@@ -213,6 +243,7 @@ export default async function GroupPage() {
       <Tabs defaultValue="pulse" className="w-full">
         <TabsList>
           <TabsTrigger value="pulse">Pulse</TabsTrigger>
+          <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
         </TabsList>
 
@@ -317,6 +348,11 @@ export default async function GroupPage() {
           </div>
         </TabsContent>
 
+        {/* SUMMARY TAB - Weekly group summary */}
+        <TabsContent value="summary" className="mt-3">
+          <WeeklySummaryCard data={weeklySummary} />
+        </TabsContent>
+
         {/* DETAILS TAB - Compact single-line goal rows */}
         <TabsContent value="details" className="mt-3 space-y-3">
           <div className="rounded-lg border bg-card divide-y">
@@ -348,7 +384,6 @@ export default async function GroupPage() {
                         const isDaily = g.goal.cadenceType === "DAILY"
                         const target = isDaily ? 7 : (g.goal.weeklyTarget ?? 1)
                         const progress = Math.min(100, Math.round((g.weekCount / target) * 100))
-                        const streak = isDaily ? g.dailyStreak : g.weeklyStreak
 
                         return (
                           <div
@@ -358,7 +393,11 @@ export default async function GroupPage() {
                             {/* Today status dot */}
                             <span
                               className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                                g.checkedToday ? "bg-emerald-500" : "bg-muted"
+                                g.checkedToday 
+                                  ? g.isPartial 
+                                    ? "bg-amber-500" 
+                                    : "bg-emerald-500" 
+                                  : "bg-muted"
                               }`}
                             />
                             {/* Goal name */}
@@ -373,12 +412,10 @@ export default async function GroupPage() {
                             <span className="text-muted-foreground tabular-nums w-8 shrink-0 text-right">
                               {g.weekCount}/{target}
                             </span>
-                            {/* Streak */}
-                            {streak > 0 && (
-                              <span className="text-muted-foreground tabular-nums w-10 shrink-0 text-right">
-                                {streak}{isDaily ? "d" : "w"}
-                              </span>
-                            )}
+                            {/* Consistency % */}
+                            <span className="text-muted-foreground tabular-nums w-10 shrink-0 text-right">
+                              {g.consistency}%
+                            </span>
                           </div>
                         )
                       })}

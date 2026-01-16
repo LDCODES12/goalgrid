@@ -1,7 +1,9 @@
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
+import { subDays } from "date-fns"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { getSuggestedReminderTimes } from "@/lib/smart-timing"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SettingsForm } from "@/components/settings-form"
 
@@ -13,6 +15,18 @@ export default async function SettingsPage() {
     where: { id: session.user.id },
   })
   if (!user) redirect("/auth/signin")
+
+  // Fetch check-ins for smart timing analysis
+  const checkIns = await prisma.checkIn.findMany({
+    where: {
+      userId: user.id,
+      timestamp: { gte: subDays(new Date(), 30) },
+    },
+    select: { timestamp: true, localDateKey: true },
+    orderBy: { timestamp: "desc" },
+  })
+
+  const smartTiming = getSuggestedReminderTimes(checkIns)
 
   return (
     <div className="space-y-6">
@@ -41,6 +55,7 @@ export default async function SettingsPage() {
         currentTimezone={user.timezone}
         reminderTime={user.reminderTime}
         reminderFrequency={user.reminderFrequency as "DAILY" | "WEEKDAYS"}
+        smartTiming={smartTiming}
       />
 
       <Card>

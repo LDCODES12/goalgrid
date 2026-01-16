@@ -1,4 +1,4 @@
-import { parseISO, subDays, addDays } from "date-fns"
+import { parseISO, subDays, addDays, differenceInDays } from "date-fns"
 import { getLocalDateKey, getWeekEnd, getWeekKey, getWeekStart } from "./time"
 
 type GoalConfig = {
@@ -140,4 +140,130 @@ export function summarizeDailyCheckIns(
   checkIns: { localDateKey: string }[]
 ): string[] {
   return checkIns.map((item) => item.localDateKey)
+}
+
+/**
+ * Compute consistency percentage over the last N days
+ * Returns a value 0-100 representing % of days with check-ins
+ */
+export function computeConsistencyPercentage(
+  checkInDateKeys: string[],
+  todayKey: string,
+  timeZone: string,
+  days: number = 30
+): number {
+  const set = new Set(checkInDateKeys)
+  let completed = 0
+  let cursor = todayKey
+
+  for (let i = 0; i < days; i++) {
+    if (set.has(cursor)) {
+      completed++
+    }
+    const cursorDate = parseISO(cursor)
+    cursor = getLocalDateKey(subDays(cursorDate, 1), timeZone)
+  }
+
+  return Math.round((completed / days) * 100)
+}
+
+/**
+ * Compute streak with grace period - allows 1 miss without breaking streak
+ * "Never miss twice" rule: one gap is forgiven, two consecutive gaps breaks streak
+ */
+export function computeGracefulStreak(
+  checkInDateKeys: string[],
+  todayKey: string,
+  timeZone: string,
+  allowedFreezes: number = 1
+): { currentStreak: number; freezesUsed: number; isAtRisk: boolean } {
+  const set = new Set(checkInDateKeys)
+  let streak = 0
+  let freezesUsed = 0
+  let consecutiveMisses = 0
+  let cursor = todayKey
+  let isAtRisk = false
+
+  // Check if today is done
+  const todayDone = set.has(todayKey)
+  if (!todayDone) {
+    // Check yesterday - if yesterday was done, streak is at risk but not broken
+    const yesterdayKey = getLocalDateKey(subDays(parseISO(todayKey), 1), timeZone)
+    if (set.has(yesterdayKey)) {
+      isAtRisk = true
+    }
+  }
+
+  while (true) {
+    if (set.has(cursor)) {
+      streak++
+      consecutiveMisses = 0
+    } else {
+      consecutiveMisses++
+      if (consecutiveMisses > allowedFreezes) {
+        // Too many consecutive misses - streak ends here
+        break
+      }
+      // Use a freeze
+      freezesUsed++
+    }
+    const cursorDate = parseISO(cursor)
+    cursor = getLocalDateKey(subDays(cursorDate, 1), timeZone)
+    
+    // Safety limit to prevent infinite loops
+    if (streak + freezesUsed > 365) break
+  }
+
+  return { currentStreak: streak, freezesUsed, isAtRisk }
+}
+
+/**
+ * Get soft failure message based on consistency and recent activity
+ */
+export function getSoftFailureMessage(
+  consistency: number,
+  lastNDaysCompleted: number,
+  lastNDays: number = 30
+): string | null {
+  if (consistency >= 80) {
+    return null // No failure message needed - doing great!
+  }
+  
+  if (consistency >= 60) {
+    return `You've completed ${lastNDaysCompleted} of the last ${lastNDays} days. Keep it up!`
+  }
+  
+  if (consistency >= 40) {
+    return `${lastNDaysCompleted} of ${lastNDays} days completed. Every day is a fresh start.`
+  }
+  
+  if (lastNDaysCompleted > 0) {
+    return `You showed up ${lastNDaysCompleted} times recently. That counts!`
+  }
+  
+  return "Ready to get back on track? Start with just today."
+}
+
+/**
+ * Count completions in the last N days
+ */
+export function countRecentCompletions(
+  checkInDateKeys: string[],
+  todayKey: string,
+  timeZone: string,
+  days: number = 30
+): number {
+  const set = new Set(checkInDateKeys)
+  let completed = 0
+  let cursor = todayKey
+
+  for (let i = 0; i < days; i++) {
+    if (set.has(cursor)) {
+      completed++
+    }
+    const cursorDate = parseISO(cursor)
+    cursor = getLocalDateKey(subDays(cursorDate, 1), timeZone)
+  }
+
+  return completed
 }

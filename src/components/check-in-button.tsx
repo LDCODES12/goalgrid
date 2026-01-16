@@ -11,10 +11,12 @@ export function CheckInButton({
   goalId,
   completed,
   label = "Complete",
+  isPartial = false,
 }: {
   goalId: string
   completed: boolean
   label?: string
+  isPartial?: boolean
 }) {
   const [isPending, startTransition] = useTransition()
   const [optimisticDone, setOptimisticDone] = useState(completed)
@@ -26,6 +28,9 @@ export function CheckInButton({
     setOptimisticDone(true)
     const formData = new FormData()
     formData.set("goalId", goalId)
+    if (isPartial) {
+      formData.set("isPartial", "true")
+    }
     startTransition(async () => {
       const result = await checkInGoalAction(formData)
       if (!result.ok) {
@@ -37,6 +42,8 @@ export function CheckInButton({
         toast.success(`Streak milestone: ${result.streakMilestone} days`)
         setShowConfetti(true)
         setTimeout(() => setShowConfetti(false), 1200)
+      } else if (isPartial) {
+        toast.success("Mini completion logged! Every bit counts.")
       } else {
         toast.success("Completion logged!")
       }
@@ -49,9 +56,10 @@ export function CheckInButton({
       <Button
         onClick={handleCheckIn}
         disabled={isPending || optimisticDone}
-        variant={optimisticDone ? "secondary" : "default"}
+        variant={isPartial ? "outline" : optimisticDone ? "secondary" : "default"}
+        size={isPartial ? "sm" : "default"}
       >
-        {optimisticDone ? "Done today" : label}
+        {optimisticDone ? (isPartial ? "Done" : "Done today") : label}
       </Button>
       {showConfetti ? <ConfettiBurst /> : null}
     </div>

@@ -17,6 +17,9 @@ export async function checkInGoalAction(formData: FormData) {
   })
   if (!parsed.success) return { ok: false, error: "Invalid goal." }
 
+  // Check if this is a partial completion
+  const isPartial = formData.get("isPartial") === "true"
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
   })
@@ -41,7 +44,21 @@ export async function checkInGoalAction(formData: FormData) {
       localDateKey,
     },
   })
+  
+  // If already completed, allow upgrading from partial to full
   if (existing) {
+    if (existing.isPartial && !isPartial) {
+      // Upgrade partial to full completion
+      await prisma.checkIn.update({
+        where: { id: existing.id },
+        data: { isPartial: false, timestamp: now },
+      })
+      revalidatePath("/dashboard")
+      revalidatePath("/group")
+      revalidatePath("/goals")
+      revalidatePath(`/goals/${goal.id}`)
+      return { ok: true, upgraded: true }
+    }
     return { ok: false, error: "Already completed today." }
   }
 
@@ -52,6 +69,7 @@ export async function checkInGoalAction(formData: FormData) {
       timestamp: now,
       localDateKey,
       weekKey,
+      isPartial,
     },
   })
 

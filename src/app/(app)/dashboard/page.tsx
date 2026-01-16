@@ -8,8 +8,13 @@ import { formatInTimeZone } from "date-fns-tz"
 import { addDays, subDays } from "date-fns"
 import {
   computeDailyStreak,
+  computeBestDailyStreak,
   computeWeeklyPoints,
   computeWeeklyStreak,
+  computeConsistencyPercentage,
+  computeGracefulStreak,
+  countRecentCompletions,
+  getSoftFailureMessage,
   summarizeDailyCheckIns,
   summarizeWeeklyCheckIns,
 } from "@/lib/scoring"
@@ -66,29 +71,43 @@ export default async function DashboardPage() {
 
   const todayGoals = goals.map((goal) => {
     const checkIns = goal.checkIns.filter((check) => check.userId === user.id)
-    const todayDone = checkIns.some((check) => check.localDateKey === todayKey)
+    const todayCheckIn = checkIns.find((check) => check.localDateKey === todayKey)
+    const todayDone = !!todayCheckIn
+    const todayPartial = todayCheckIn?.isPartial ?? false
     const checkInsThisWeek = checkIns.filter(
       (check) => check.weekKey === weekKey
     )
 
-    const dailyStreak = computeDailyStreak(
-      summarizeDailyCheckIns(checkIns),
-      todayKey,
-      user.timezone
-    )
+    const dateKeys = summarizeDailyCheckIns(checkIns)
+    const dailyStreak = computeDailyStreak(dateKeys, todayKey, user.timezone)
+    const bestStreak = computeBestDailyStreak(dateKeys, user.timezone)
+    const consistency = computeConsistencyPercentage(dateKeys, todayKey, user.timezone, 30)
+    const recentCompletions = countRecentCompletions(dateKeys, todayKey, user.timezone, 30)
+    const gracefulStreak = computeGracefulStreak(dateKeys, todayKey, user.timezone, goal.streakFreezes)
+    
     const weeklyCounts = summarizeWeeklyCheckIns(checkIns)
     const weeklyStreak =
       goal.cadenceType === "WEEKLY" && goal.weeklyTarget
         ? computeWeeklyStreak(weeklyCounts, weekStart, user.timezone, goal.weeklyTarget)
         : 0
 
+    // Get soft failure message if needed
+    const softMessage = goal.cadenceType === "DAILY" && !todayDone
+      ? getSoftFailureMessage(consistency, recentCompletions, 30)
+      : null
+
     return {
       goal,
       todayDone,
+      todayPartial,
       checkInsThisWeek,
       dailyStreak,
+      bestStreak,
+      consistency,
+      gracefulStreak,
       weeklyStreak,
       checkIns,
+      softMessage,
     }
   })
 
@@ -267,7 +286,7 @@ export default async function DashboardPage() {
                 to start tracking.
               </div>
             ) : (
-            todayGoals.map(({ goal, todayDone, checkInsThisWeek, checkIns }) => {
+            todayGoals.map(({ goal, todayDone, todayPartial, checkInsThisWeek, checkIns, consistency }) => {
                 const weeklyTarget = goal.weeklyTarget ?? 1
                 const isWeekly =
                   goal.cadenceType === "WEEKLY" && goal.weeklyTarget != null
@@ -298,18 +317,33 @@ export default async function DashboardPage() {
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <div className="text-sm font-medium">{goal.name}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{goal.name}</span>
+                          <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            {consistency}%
+                          </span>
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {goal.cadenceType === "DAILY"
                             ? "Daily"
                             : `Weekly target: ${goal.weeklyTarget}x`}
                         </div>
                       </div>
-                      <CheckInButton
-                        goalId={goal.id}
-                        completed={todayDone}
-                        label="Complete"
-                      />
+                      <div className="flex items-center gap-2">
+                        {!todayDone && goal.cadenceType === "DAILY" && (
+                          <CheckInButton
+                            goalId={goal.id}
+                            completed={false}
+                            label="Mini"
+                            isPartial={true}
+                          />
+                        )}
+                        <CheckInButton
+                          goalId={goal.id}
+                          completed={todayDone && !todayPartial}
+                          label={todayPartial ? "Upgrade" : "Complete"}
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -322,10 +356,18 @@ export default async function DashboardPage() {
                       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                         <span
                           className={`h-2 w-2 rounded-full ${
-                            todayDone ? "bg-emerald-500" : "bg-muted"
+                            todayDone 
+                              ? todayPartial 
+                                ? "bg-amber-500" 
+                                : "bg-emerald-500" 
+                              : "bg-muted"
                           }`}
                         />
-                        {todayDone ? "Completed today" : "Not completed today"}
+                        {todayDone 
+                          ? todayPartial 
+                            ? "Partial completion" 
+                            : "Completed today" 
+                          : "Not completed today"}
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
@@ -346,25 +388,53 @@ export default async function DashboardPage() {
         </Card>
         <Card data-focus-hide="true">
           <CardHeader>
-            <CardTitle>Streaks</CardTitle>
+            <CardTitle>Progress</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {todayGoals.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                Streaks will appear once you start completing goals.
+                Progress will appear once you start completing goals.
               </div>
             ) : (
-              todayGoals.map(({ goal, dailyStreak, weeklyStreak }) => (
+              todayGoals.map(({ goal, dailyStreak, bestStreak, consistency, gracefulStreak, weeklyStreak, softMessage }) => (
                 <div
                   key={goal.id}
-                  className="flex items-center justify-between rounded-xl border bg-background px-3 py-2"
+                  className="rounded-xl border bg-background px-3 py-2 space-y-2"
                 >
-                  <div className="text-sm font-medium">{goal.name}</div>
-                  <Badge variant="secondary">
-                    {goal.cadenceType === "DAILY"
-                      ? `${dailyStreak} day streak`
-                      : `${weeklyStreak} week streak`}
-                  </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">{goal.name}</div>
+                    <Badge variant="secondary">
+                      {consistency}% consistency
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    {goal.cadenceType === "DAILY" ? (
+                      <>
+                        <span>Current: {gracefulStreak.currentStreak}d</span>
+                        <span>·</span>
+                        <span>Best: {bestStreak}d</span>
+                        {gracefulStreak.freezesUsed > 0 && (
+                          <>
+                            <span>·</span>
+                            <span className="text-amber-500">{gracefulStreak.freezesUsed} freeze used</span>
+                          </>
+                        )}
+                        {gracefulStreak.isAtRisk && (
+                          <>
+                            <span>·</span>
+                            <span className="text-amber-500">At risk!</span>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <span>{weeklyStreak} week streak</span>
+                    )}
+                  </div>
+                  {softMessage && (
+                    <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
+                      {softMessage}
+                    </div>
+                  )}
                 </div>
               ))
             )}

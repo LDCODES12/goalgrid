@@ -8,6 +8,10 @@ import {
   computeBestDailyStreak,
   computeDailyStreak,
   computeWeeklyStreak,
+  computeConsistencyPercentage,
+  computeGracefulStreak,
+  countRecentCompletions,
+  getSoftFailureMessage,
   summarizeDailyCheckIns,
   summarizeWeeklyCheckIns,
 } from "@/lib/scoring"
@@ -15,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CheckInButton } from "@/components/check-in-button"
 import { TinyHeatmap } from "@/components/tiny-heatmap"
+import { MonthlyHeatmap } from "@/components/monthly-heatmap"
 import { Sparkline } from "@/components/sparkline"
 
 export default async function GoalDetailPage({
@@ -42,11 +47,17 @@ export default async function GoalDetailPage({
 
   const checkIns = goal.checkIns.filter((check) => check.userId === user.id)
   const checkInsThisWeek = checkIns.filter((check) => check.weekKey === weekKey)
-  const todayDone = checkIns.some((check) => check.localDateKey === todayKey)
+  const todayCheckIn = checkIns.find((check) => check.localDateKey === todayKey)
+  const todayDone = !!todayCheckIn
+  const todayPartial = todayCheckIn?.isPartial ?? false
 
   const dateKeys = summarizeDailyCheckIns(checkIns)
   const currentDailyStreak = computeDailyStreak(dateKeys, todayKey, user.timezone)
   const bestDailyStreak = computeBestDailyStreak(dateKeys, user.timezone)
+  const consistency = computeConsistencyPercentage(dateKeys, todayKey, user.timezone, 30)
+  const gracefulStreak = computeGracefulStreak(dateKeys, todayKey, user.timezone, goal.streakFreezes)
+  const recentCompletions = countRecentCompletions(dateKeys, todayKey, user.timezone, 30)
+  const softMessage = !todayDone ? getSoftFailureMessage(consistency, recentCompletions, 30) : null
 
   const weeklyCounts = summarizeWeeklyCheckIns(checkIns)
   const weeklyStreak =
@@ -72,19 +83,55 @@ export default async function GoalDetailPage({
     (key) => checkIns.filter((check) => check.localDateKey === key).length
   )
 
+  // Monthly heatmap data (last 84 days)
+  const heatmapData = Array.from({ length: 84 }).map((_, index) => {
+    const date = subDays(new Date(), 83 - index)
+    const dateKey = getLocalDateKey(date, user.timezone)
+    const dayCheckIns = checkIns.filter((check) => check.localDateKey === dateKey)
+    return {
+      date: dateKey,
+      count: dayCheckIns.length,
+      isPartial: dayCheckIns.some((check) => check.isPartial) && !dayCheckIns.some((check) => !check.isPartial),
+    }
+  })
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{goal.name}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold">{goal.name}</h1>
+            <Badge variant="secondary">{consistency}% consistency</Badge>
+          </div>
           <p className="text-sm text-muted-foreground">
             {goal.cadenceType === "DAILY"
               ? "Daily goal"
               : `Weekly target: ${goal.weeklyTarget}x`}
           </p>
         </div>
-        <CheckInButton goalId={goal.id} completed={todayDone} />
+        <div className="flex items-center gap-2">
+          {!todayDone && goal.cadenceType === "DAILY" && (
+            <CheckInButton goalId={goal.id} completed={false} label="Mini" isPartial={true} />
+          )}
+          <CheckInButton 
+            goalId={goal.id} 
+            completed={todayDone && !todayPartial} 
+            label={todayPartial ? "Upgrade" : "Complete"} 
+          />
+        </div>
       </div>
+
+      {softMessage && (
+        <div className="rounded-lg border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+          {softMessage}
+        </div>
+      )}
+
+      {gracefulStreak.isAtRisk && (
+        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
+          Your streak is at risk! Complete today to keep it alive.
+        </div>
+      )}
 
       <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Card>
@@ -93,19 +140,27 @@ export default async function GoalDetailPage({
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <div className="text-xs uppercase text-muted-foreground">
-                Last 7 days
+              <div className="text-xs uppercase text-muted-foreground mb-2">
+                Last 12 weeks
               </div>
-              <div className="mt-2">
-                <TinyHeatmap counts={last7Counts} />
-              </div>
+              <MonthlyHeatmap data={heatmapData} />
             </div>
-            <div>
-              <div className="text-xs uppercase text-muted-foreground">
-                Streak activity
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs uppercase text-muted-foreground">
+                  Last 7 days
+                </div>
+                <div className="mt-2">
+                  <TinyHeatmap counts={last7Counts} />
+                </div>
               </div>
-              <div className="mt-2">
-                <Sparkline values={sparkValues} />
+              <div>
+                <div className="text-xs uppercase text-muted-foreground">
+                  Streak activity
+                </div>
+                <div className="mt-2">
+                  <Sparkline values={sparkValues} />
+                </div>
               </div>
             </div>
             <div className="rounded-xl border bg-background p-3 text-sm text-muted-foreground">
@@ -122,7 +177,17 @@ export default async function GoalDetailPage({
                     key={item.id}
                     className="flex items-center justify-between rounded-lg border bg-background px-3 py-2"
                   >
-                    <span>{item.localDateKey}</span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`h-2 w-2 rounded-full ${
+                          item.isPartial ? "bg-amber-500" : "bg-emerald-500"
+                        }`}
+                      />
+                      <span>{item.localDateKey}</span>
+                      {item.isPartial && (
+                        <span className="text-xs text-amber-500">partial</span>
+                      )}
+                    </div>
                     <span className="text-xs text-muted-foreground">
                       {item.timestamp.toLocaleTimeString()}
                     </span>
@@ -138,8 +203,8 @@ export default async function GoalDetailPage({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Total completions</span>
-              <span className="text-lg font-semibold">{checkIns.length}</span>
+              <span className="text-sm text-muted-foreground">Consistency (30d)</span>
+              <span className="text-lg font-semibold">{consistency}%</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">This week</span>
@@ -149,15 +214,30 @@ export default async function GoalDetailPage({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Current streak</span>
-              <Badge variant="secondary">
-                {goal.cadenceType === "DAILY"
-                  ? `${currentDailyStreak} days`
-                  : `${weeklyStreak} weeks`}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">
+                  {goal.cadenceType === "DAILY"
+                    ? `${gracefulStreak.currentStreak} days`
+                    : `${weeklyStreak} weeks`}
+                </Badge>
+                {gracefulStreak.freezesUsed > 0 && (
+                  <span className="text-xs text-amber-500">
+                    ({gracefulStreak.freezesUsed} freeze)
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Best daily streak</span>
-              <span className="text-lg font-semibold">{bestDailyStreak}</span>
+              <span className="text-sm text-muted-foreground">Best streak</span>
+              <span className="text-lg font-semibold">{bestDailyStreak} days</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Total completions</span>
+              <span className="text-lg font-semibold">{checkIns.length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Last 30 days</span>
+              <span className="text-lg font-semibold">{recentCompletions}/30</span>
             </div>
             {goal.notes ? (
               <div className="rounded-xl border bg-background p-3 text-sm text-muted-foreground">

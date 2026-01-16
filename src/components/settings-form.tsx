@@ -39,14 +39,23 @@ const reminderTimes = [
   "20:00",
 ]
 
+type SmartTiming = {
+  optimal: string
+  confidence: "high" | "medium" | "low"
+  pattern: string
+  alternatives: string[]
+}
+
 export function SettingsForm({
   currentTimezone,
   reminderTime,
   reminderFrequency,
+  smartTiming,
 }: {
   currentTimezone: string
   reminderTime: string
   reminderFrequency: "DAILY" | "WEEKDAYS"
+  smartTiming?: SmartTiming
 }) {
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -121,6 +130,35 @@ export function SettingsForm({
           <CardTitle>Reminders</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
+          {/* Smart Timing Suggestion */}
+          {smartTiming && smartTiming.confidence !== "low" && reminderTime !== smartTiming.optimal && (
+            <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium text-foreground">
+                    Smart suggestion: {smartTiming.optimal}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Based on your pattern: {smartTiming.pattern} ({smartTiming.confidence} confidence)
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    handleReminderUpdate({
+                      reminderTime: smartTiming.optimal,
+                      reminderFrequency,
+                    })
+                  }
+                  disabled={isPending}
+                >
+                  Apply
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <div className="mb-2 text-xs uppercase text-muted-foreground">
