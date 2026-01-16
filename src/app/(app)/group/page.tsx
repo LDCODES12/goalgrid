@@ -228,67 +228,67 @@ export default async function GroupPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Group progress</CardTitle>
+            <CardTitle>Pulse</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-xl border bg-background px-3 py-3 text-sm">
               <div className="flex items-center justify-between">
-                <span>Completed today</span>
+                <span>Today&apos;s completions</span>
                 <span className="font-medium">
                   {pulseCheckedIn}/{sortedLeaderboard.length}
                 </span>
               </div>
-              <div className="mt-3 h-2 w-full rounded-full bg-muted">
-                <div
-                  className="h-2 rounded-full bg-primary"
-                  style={{ width: `${pulsePct}%` }}
-                />
+              <div className="mt-2 text-xs text-muted-foreground">
+                Quick snapshot of how everyone is doing today.
               </div>
             </div>
-            <div className="space-y-2 text-sm">
-              {todaySnapshots.map((entry) => (
-                <div
-                  key={entry.member.id}
-                  className="rounded-xl border bg-background px-3 py-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{entry.member.user.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {entry.goals.filter((goal) => goal.checkedToday).length}/
-                      {entry.goals.length} completed
-                    </span>
-                  </div>
-                  <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                    {entry.goals.length === 0 ? (
-                      <div>No goals yet.</div>
-                    ) : (
-                      entry.goals.slice(0, 2).map((goal) => (
-                        <div
-                          key={goal.goal.id}
-                          className="flex items-center justify-between"
-                        >
-                          <span className="truncate">{goal.goal.name}</span>
+            <div className="grid gap-3 text-sm">
+              {todaySnapshots.map((entry) => {
+                const completedCount = entry.goals.filter(
+                  (goal) => goal.checkedToday
+                ).length
+                return (
+                  <div
+                    key={entry.member.id}
+                    className="rounded-xl border bg-background px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{entry.member.user.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {completedCount}/{entry.goals.length} today
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                      {entry.goals.length === 0 ? (
+                        <span className="text-muted-foreground">No goals yet.</span>
+                      ) : (
+                        entry.goals.slice(0, 3).map((goal) => (
                           <span
-                            className={`h-2 w-2 rounded-full ${
+                            key={goal.goal.id}
+                            className={`rounded-full px-2 py-1 ${
                               goal.checkedToday
-                                ? "bg-emerald-500"
-                                : "bg-muted"
+                                ? "bg-emerald-500/15 text-emerald-600"
+                                : "bg-muted text-muted-foreground"
                             }`}
-                          />
-                        </div>
-                      ))
-                    )}
-                    {entry.goals.length > 2 ? (
-                      <div>+ {entry.goals.length - 2} more</div>
+                          >
+                            {goal.goal.name}
+                          </span>
+                        ))
+                      )}
+                      {entry.goals.length > 3 ? (
+                        <span className="rounded-full bg-muted px-2 py-1 text-muted-foreground">
+                          +{entry.goals.length - 3} more
+                        </span>
+                      ) : null}
+                    </div>
+                    {entry.goals.some((goal) => !goal.checkedToday) ? (
+                      <div className="mt-2">
+                        <RemindButton name={entry.member.user.name} />
+                      </div>
                     ) : null}
                   </div>
-                  {entry.goals.some((goal) => !goal.checkedToday) ? (
-                    <div className="mt-2">
-                      <RemindButton name={entry.member.user.name} />
-                    </div>
-                  ) : null}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
