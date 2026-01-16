@@ -293,7 +293,13 @@ export default async function GroupPage() {
                   (g) => g.goal.cadenceType === "WEEKLY"
                 )
                 const completedCount = entry.goals.filter((g) => g.checkedToday).length
-                const needsReminder = dailyGoals.some((g) => !g.checkedToday)
+                // Show remind for any incomplete daily goals, or weekly goals behind pace
+                const hasPendingDaily = dailyGoals.some((g) => !g.checkedToday)
+                const hasPendingWeekly = weeklyGoals.some((g) => {
+                  const target = g.goal.weeklyTarget ?? 1
+                  return g.weekCount < target
+                })
+                const needsReminder = hasPendingDaily || hasPendingWeekly
 
                 return (
                   <div key={entry.member.id} className="px-3 py-2">
