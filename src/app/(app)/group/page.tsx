@@ -214,297 +214,215 @@ export default async function GroupPage() {
           <TabsTrigger value="pulse">Pulse</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
         </TabsList>
-        <TabsContent value="pulse" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pulse</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-xl border bg-background px-3 py-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span>Members active today</span>
-                  <span className="font-medium">
-                    {pulseCompleted}/{sortedLeaderboard.length}
-                  </span>
-                </div>
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Quick snapshot of who has completed at least one goal today.
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-4 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                  Completed
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
-                  Daily - needs attention
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-6 rounded-full bg-primary/20" />
-                  Weekly progress
-                </span>
-              </div>
-              <div className="grid gap-4 text-sm">
-                {todaySnapshots.map((entry) => {
-                  const dailyGoals = entry.goals.filter(
-                    (g) => g.goal.cadenceType === "DAILY"
-                  )
-                  const weeklyGoals = entry.goals.filter(
-                    (g) => g.goal.cadenceType === "WEEKLY"
-                  )
-                  const dailyCompleted = dailyGoals.filter(
-                    (g) => g.checkedToday
-                  ).length
-                  const needsReminder = dailyGoals.some((g) => !g.checkedToday)
 
-                  return (
-                    <div
-                      key={entry.member.id}
-                      className="rounded-xl border bg-background overflow-hidden"
-                    >
-                      {/* Header */}
-                      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
-                        <span className="font-medium">
-                          {entry.member.user.name}
+        {/* PULSE TAB - Compact flat list */}
+        <TabsContent value="pulse" className="mt-3">
+          <div className="rounded-lg border bg-card">
+            {/* Minimal header */}
+            <div className="flex items-center justify-between px-3 py-2 border-b">
+              <span className="text-sm font-medium">Today&apos;s pulse</span>
+              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  done
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  pending
+                </span>
+                <span className="tabular-nums">{pulseCompleted}/{sortedLeaderboard.length} active</span>
+              </div>
+            </div>
+
+            {/* Member rows */}
+            <div className="divide-y">
+              {todaySnapshots.map((entry) => {
+                const dailyGoals = entry.goals.filter(
+                  (g) => g.goal.cadenceType === "DAILY"
+                )
+                const weeklyGoals = entry.goals.filter(
+                  (g) => g.goal.cadenceType === "WEEKLY"
+                )
+                const completedCount = entry.goals.filter((g) => g.checkedToday).length
+                const needsReminder = dailyGoals.some((g) => !g.checkedToday)
+
+                return (
+                  <div key={entry.member.id} className="px-3 py-2">
+                    {/* Member name row */}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-medium">{entry.member.user.name}</span>
+                      {entry.goals.length > 0 && (
+                        <span className="text-[11px] text-muted-foreground tabular-nums">
+                          {completedCount}/{entry.goals.length}
                         </span>
-                        {dailyGoals.length > 0 ? (
-                          <span className="text-xs text-muted-foreground">
-                            {dailyCompleted}/{dailyGoals.length} daily done
-                          </span>
-                        ) : entry.goals.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">
-                            No goals
-                          </span>
-                        ) : null}
-                      </div>
-
-                      {entry.goals.length === 0 ? (
-                        <div className="px-4 py-3 text-muted-foreground text-sm">
-                          No goals yet.
-                        </div>
-                      ) : (
-                        <div className="px-4 py-3 space-y-4">
-                          {/* Daily Goals Section */}
-                          {dailyGoals.length > 0 && (
-                            <div className="space-y-2">
-                              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                                Required Today
-                              </div>
-                              <div className="space-y-1.5">
-                                {dailyGoals.map((g) => (
-                                  <div
-                                    key={g.goal.id}
-                                    className="flex items-center justify-between"
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      {g.checkedToday ? (
-                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                      ) : (
-                                        <AlertCircle className="h-4 w-4 text-amber-500" />
-                                      )}
-                                      <span className={g.checkedToday ? "text-muted-foreground" : ""}>
-                                        {g.goal.name}
-                                      </span>
-                                    </div>
-                                    <span className="text-xs text-muted-foreground">
-                                      {g.checkedToday ? "Done" : "Pending"}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Weekly Goals Section */}
-                          {weeklyGoals.length > 0 && (
-                            <div className="space-y-2">
-                              <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                                Weekly Progress
-                              </div>
-                              <div className="space-y-2.5">
-                                {weeklyGoals.map((g) => {
-                                  const target = g.goal.weeklyTarget ?? 1
-                                  const progress = Math.min(
-                                    100,
-                                    Math.round((g.weekCount / target) * 100)
-                                  )
-                                  const isComplete = g.weekCount >= target
-
-                                  return (
-                                    <div key={g.goal.id} className="space-y-1">
-                                      <div className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2">
-                                          {isComplete && (
-                                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                          )}
-                                          <span className={isComplete ? "text-muted-foreground" : ""}>
-                                            {g.goal.name}
-                                          </span>
-                                        </div>
-                                        <span className="text-xs text-muted-foreground">
-                                          {g.weekCount}/{target} this week
-                                        </span>
-                                      </div>
-                                      <Progress value={progress} className="h-1.5" />
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Remind button */}
-                      {needsReminder && entry.member.user.id !== session.user.id && (
-                        <div className="px-4 py-2 border-t bg-muted/20">
-                          <RemindButton
-                            recipientId={entry.member.user.id}
-                            recipientName={entry.member.user.name}
-                          />
-                        </div>
                       )}
                     </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="details" className="mt-4 space-y-4">
-          {/* Member Goal Profiles */}
-          {todaySnapshots.map((entry) => {
-            const leaderboardEntry = sortedLeaderboard.find(
-              (l) => l.member.id === entry.member.id
-            )
-            const rank = sortedLeaderboard.findIndex(
-              (l) => l.member.id === entry.member.id
-            ) + 1
-            const joinDate = new Date(entry.member.joinedAt).toLocaleDateString(
-              "en-US",
-              { month: "short", year: "numeric" }
-            )
 
-            return (
-              <Card key={entry.member.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">
-                        {entry.member.user.name}
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        Member since {joinDate}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-semibold">
-                        {leaderboardEntry?.totalPoints ?? 0}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        points this week · #{rank}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {entry.goals.length === 0 ? (
-                    <div className="text-sm text-muted-foreground py-2">
-                      No goals yet.
-                    </div>
-                  ) : (
-                    entry.goals.map((g) => {
-                      const isDaily = g.goal.cadenceType === "DAILY"
-                      const target = isDaily ? 7 : (g.goal.weeklyTarget ?? 1)
-                      const progress = Math.min(
-                        100,
-                        Math.round((g.weekCount / target) * 100)
-                      )
-                      const streak = isDaily ? g.dailyStreak : g.weeklyStreak
-                      const streakLabel = isDaily
-                        ? `${streak} day${streak !== 1 ? "s" : ""}`
-                        : `${streak} week${streak !== 1 ? "s" : ""}`
-
-                      return (
-                        <div
-                          key={g.goal.id}
-                          className="rounded-xl border bg-background p-4"
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <div className="font-medium">{g.goal.name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {isDaily
-                                  ? "Daily"
-                                  : `${g.goal.weeklyTarget}x per week`}
-                              </div>
-                            </div>
-                            {streak > 0 && (
-                              <Badge variant="secondary">
-                                {streakLabel} streak
-                              </Badge>
-                            )}
+                    {entry.goals.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">No goals</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        {/* Daily goals - inline with icon */}
+                        {dailyGoals.map((g) => (
+                          <div key={g.goal.id} className="flex items-center gap-1 text-xs">
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                g.checkedToday ? "bg-emerald-500" : "bg-amber-500"
+                              }`}
+                            />
+                            <span className={g.checkedToday ? "text-muted-foreground" : ""}>
+                              {g.goal.name}
+                            </span>
                           </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                              <span>This week</span>
-                              <span>
+                        ))}
+
+                        {/* Weekly goals - inline with progress */}
+                        {weeklyGoals.map((g) => {
+                          const target = g.goal.weeklyTarget ?? 1
+                          const progress = Math.min(100, Math.round((g.weekCount / target) * 100))
+                          const isComplete = g.weekCount >= target
+
+                          return (
+                            <div key={g.goal.id} className="flex items-center gap-1.5 text-xs">
+                              {isComplete && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                              )}
+                              <span className={isComplete ? "text-muted-foreground" : ""}>
+                                {g.goal.name}
+                              </span>
+                              <Progress value={progress} className="h-1 w-10" />
+                              <span className="text-[10px] text-muted-foreground tabular-nums">
                                 {g.weekCount}/{target}
                               </span>
                             </div>
-                            <Progress value={progress} className="h-2" />
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span
-                                className={`h-2 w-2 rounded-full ${
-                                  g.checkedToday ? "bg-emerald-500" : "bg-muted"
-                                }`}
-                              />
-                              {g.checkedToday
-                                ? "Completed today"
-                                : "Not completed today"}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
+                          )
+                        })}
+                      </div>
+                    )}
 
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent activity</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+                    {/* Remind button - compact */}
+                    {needsReminder && entry.member.user.id !== session.user.id && (
+                      <div className="mt-1.5">
+                        <RemindButton
+                          recipientId={entry.member.user.id}
+                          recipientName={entry.member.user.name}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* DETAILS TAB - Compact single-line goal rows */}
+        <TabsContent value="details" className="mt-3 space-y-3">
+          <div className="rounded-lg border bg-card divide-y">
+            {todaySnapshots.map((entry) => {
+              const leaderboardEntry = sortedLeaderboard.find(
+                (l) => l.member.id === entry.member.id
+              )
+              const rank =
+                sortedLeaderboard.findIndex((l) => l.member.id === entry.member.id) + 1
+
+              return (
+                <div key={entry.member.id}>
+                  {/* Member header - single line */}
+                  <div className="flex items-center justify-between px-3 py-2 bg-muted/30">
+                    <span className="text-sm font-medium">{entry.member.user.name}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {leaderboardEntry?.totalPoints ?? 0} pts · #{rank}
+                    </span>
+                  </div>
+
+                  {/* Goal rows */}
+                  {entry.goals.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                      No goals
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-dashed">
+                      {entry.goals.map((g) => {
+                        const isDaily = g.goal.cadenceType === "DAILY"
+                        const target = isDaily ? 7 : (g.goal.weeklyTarget ?? 1)
+                        const progress = Math.min(100, Math.round((g.weekCount / target) * 100))
+                        const streak = isDaily ? g.dailyStreak : g.weeklyStreak
+
+                        return (
+                          <div
+                            key={g.goal.id}
+                            className="flex items-center gap-3 px-3 py-1.5 text-xs"
+                          >
+                            {/* Today status dot */}
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                                g.checkedToday ? "bg-emerald-500" : "bg-muted"
+                              }`}
+                            />
+                            {/* Goal name */}
+                            <span className="flex-1 truncate font-medium">{g.goal.name}</span>
+                            {/* Cadence */}
+                            <span className="text-muted-foreground w-14 shrink-0">
+                              {isDaily ? "daily" : `${g.goal.weeklyTarget}x/wk`}
+                            </span>
+                            {/* Progress bar */}
+                            <Progress value={progress} className="h-1 w-12 shrink-0" />
+                            {/* Count */}
+                            <span className="text-muted-foreground tabular-nums w-8 shrink-0 text-right">
+                              {g.weekCount}/{target}
+                            </span>
+                            {/* Streak */}
+                            {streak > 0 && (
+                              <span className="text-muted-foreground tabular-nums w-10 shrink-0 text-right">
+                                {streak}{isDaily ? "d" : "w"}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Recent Activity - compact */}
+          <div className="rounded-lg border bg-card">
+            <div className="px-3 py-2 border-b">
+              <span className="text-sm font-medium">Recent activity</span>
+            </div>
+            <div className="divide-y">
               {recentCheckIns.length === 0 ? (
-                <div className="text-sm text-muted-foreground">
-                  No completions yet. Be the first to log progress.
+                <div className="px-3 py-2 text-xs text-muted-foreground">
+                  No completions yet.
                 </div>
               ) : (
                 recentCheckIns.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-xl border bg-background px-3 py-2 text-sm"
+                    className="flex items-center justify-between px-3 py-1.5 text-xs"
                   >
                     <span>
-                      {item.user.name} completed:{" "}
+                      <span className="text-muted-foreground">{item.user.name}</span>
+                      {" · "}
                       <span className="font-medium">{item.goal.name}</span>
                     </span>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <CheerButton name={item.user.name} />
-                      <span className="text-xs text-muted-foreground">
-                        {item.timestamp.toLocaleString()}
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        {item.timestamp.toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
                       </span>
                     </div>
                   </div>
                 ))
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
