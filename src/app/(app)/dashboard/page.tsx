@@ -233,7 +233,7 @@ export default async function DashboardPage() {
 
       {hasMissingToday ? (
         <div className="rounded-2xl border border-dashed bg-background px-6 py-4 text-sm text-muted-foreground">
-          You haven&apos;t completed a goal today. A quick tap keeps your streak alive.
+          You have goals waiting today. Even a quick check-in counts toward your consistency.
         </div>
       ) : null}
 
