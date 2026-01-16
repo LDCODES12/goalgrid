@@ -22,7 +22,7 @@ export function TinyHeatmap({
           <span
             key={index}
             className={`h-3 w-3 rounded ${bg}`}
-            title={`${count} check-ins`}
+            title={`${count} completions`}
           />
         )
       })}

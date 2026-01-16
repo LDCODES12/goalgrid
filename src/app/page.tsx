@@ -33,7 +33,7 @@ export default async function Home() {
               A clean way to keep habits consistent with friends.
             </h1>
             <p className="mt-5 text-lg text-muted-foreground">
-              GoalGrid makes progress visible with one-tap check-ins, weekly
+              GoalGrid makes progress visible with one-tap completions, weekly
               targets, and a shared group feed. No clutter, just momentum.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -82,7 +82,7 @@ export default async function Home() {
         <section className="grid gap-6 md:grid-cols-3">
           {[
             {
-              title: "One-tap check-ins",
+              title: "One-tap completions",
               description:
                 "Daily or weekly goals, same fast flow. Log progress in seconds.",
             },
@@ -125,7 +125,7 @@ export default async function Home() {
                 Step 2
               </div>
               <div className="mt-2 text-sm font-medium text-foreground">
-                Check in fast
+                Complete fast
               </div>
               <p className="mt-2">
                 One tap logs your progress and keeps streaks alive.

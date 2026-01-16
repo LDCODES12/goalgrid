@@ -89,7 +89,7 @@ export default async function GoalDetailPage({
       <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Check-in history</CardTitle>
+            <CardTitle>Completion history</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -109,12 +109,12 @@ export default async function GoalDetailPage({
               </div>
             </div>
             <div className="rounded-xl border bg-background p-3 text-sm text-muted-foreground">
-              Recent check-ins
+              Recent completions
             </div>
             <div className="space-y-2 text-sm">
               {recentCheckIns.length === 0 ? (
                 <div className="text-muted-foreground">
-                  No check-ins yet. Tap “Check in” to start.
+                  No completions yet. Tap “Complete” to start.
                 </div>
               ) : (
                 recentCheckIns.map((item) => (
@@ -138,7 +138,7 @@ export default async function GoalDetailPage({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Total check-ins</span>
+              <span className="text-sm text-muted-foreground">Total completions</span>
               <span className="text-lg font-semibold">{checkIns.length}</span>
             </div>
             <div className="flex items-center justify-between">

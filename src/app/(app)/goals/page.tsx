@@ -117,7 +117,7 @@ export default async function GoalsPage() {
                           todayDone ? "bg-emerald-500" : "bg-muted"
                         }`}
                       />
-                      {todayDone ? "Checked in today" : "Not checked in today"}
+                      {todayDone ? "Completed today" : "Not completed today"}
                     </div>
                   </div>
                 </div>

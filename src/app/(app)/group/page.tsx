@@ -310,7 +310,7 @@ export default async function GroupPage() {
                 </div>
                 <Badge variant="secondary">
                   {entry.goals.filter((goal) => goal.checkedToday).length}/
-                  {entry.goals.length} checked in
+                  {entry.goals.length} completed
                 </Badge>
               </div>
               <div className="mt-3 grid gap-2 md:grid-cols-2">
@@ -389,7 +389,7 @@ export default async function GroupPage() {
         <CardContent className="space-y-3">
           {recentCheckIns.length === 0 ? (
             <div className="text-sm text-muted-foreground">
-              No check-ins yet. Be the first to log progress.
+              No completions yet. Be the first to log progress.
             </div>
           ) : (
             recentCheckIns.map((item) => (
@@ -398,7 +398,7 @@ export default async function GroupPage() {
                 className="flex items-center justify-between rounded-xl border bg-background px-3 py-2 text-sm"
               >
                 <span>
-                  {item.user.name} checked in:{" "}
+                  {item.user.name} completed:{" "}
                   <span className="font-medium">{item.goal.name}</span>
                 </span>
                 <div className="flex items-center gap-3">

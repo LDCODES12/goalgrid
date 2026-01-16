@@ -10,7 +10,7 @@ import { ConfettiBurst } from "@/components/confetti-burst"
 export function CheckInButton({
   goalId,
   completed,
-  label = "Check in",
+  label = "Complete",
 }: {
   goalId: string
   completed: boolean
@@ -30,7 +30,7 @@ export function CheckInButton({
       const result = await checkInGoalAction(formData)
       if (!result.ok) {
         setOptimisticDone(false)
-        toast.error(result.error ?? "Could not check in.")
+        toast.error(result.error ?? "Could not log completion.")
         return
       }
       if (result.streakMilestone) {
@@ -38,7 +38,7 @@ export function CheckInButton({
         setShowConfetti(true)
         setTimeout(() => setShowConfetti(false), 1200)
       } else {
-        toast.success("Check-in logged!")
+        toast.success("Completion logged!")
       }
       router.refresh()
     })

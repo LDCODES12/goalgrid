@@ -201,7 +201,7 @@ export default async function DashboardPage() {
 
       {hasMissingToday ? (
         <div className="rounded-2xl border border-dashed bg-background px-6 py-4 text-sm text-muted-foreground">
-          You haven&apos;t checked in today. A quick tap keeps your streak alive.
+          You haven&apos;t completed a goal today. A quick tap keeps your streak alive.
         </div>
       ) : null}
 
@@ -219,7 +219,7 @@ export default async function DashboardPage() {
                 <CheckInButton
                   goalId={pendingGoal.goal.id}
                   completed={pendingGoal.todayDone}
-                  label={`Check in: ${pendingGoal.goal.name}`}
+                  label={`Complete: ${pendingGoal.goal.name}`}
                 />
                 <span className="text-xs text-muted-foreground">
                   One tap logs today&apos;s progress.
@@ -227,7 +227,7 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="text-xs text-muted-foreground">
-                You&apos;re fully checked in today.
+                You&apos;re fully completed for today.
               </div>
             )}
           </div>
@@ -293,7 +293,7 @@ export default async function DashboardPage() {
                       <CheckInButton
                         goalId={goal.id}
                         completed={todayDone}
-                        label="Check in"
+                        label="Complete"
                       />
                     </div>
                     <div className="space-y-2">
@@ -310,7 +310,7 @@ export default async function DashboardPage() {
                             todayDone ? "bg-emerald-500" : "bg-muted"
                           }`}
                         />
-                        {todayDone ? "Checked in today" : "Not checked in today"}
+                        {todayDone ? "Completed today" : "Not completed today"}
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
@@ -336,7 +336,7 @@ export default async function DashboardPage() {
           <CardContent className="space-y-3">
             {todayGoals.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                Streaks will appear once you start checking in.
+                Streaks will appear once you start completing goals.
               </div>
             ) : (
               todayGoals.map(({ goal, dailyStreak, weeklyStreak }) => (
@@ -435,7 +435,7 @@ export default async function DashboardPage() {
         <CardContent className="flex flex-wrap gap-2">
           {badges.length === 0 ? (
             <div className="text-sm text-muted-foreground">
-              No badges yet. Your first check-in unlocks one!
+              No badges yet. Your first completion unlocks one!
             </div>
           ) : (
             badges.map((badge) => (
@@ -461,7 +461,7 @@ export default async function DashboardPage() {
               Frequency: <span className="text-foreground">{reminderLabel}</span>
             </div>
             <div>
-              Best check-in time:{" "}
+              Best completion time:{" "}
               <span className="text-foreground">{bestTimeLabel}</span>
             </div>
             <div className="text-xs text-muted-foreground">
@@ -492,7 +492,7 @@ export default async function DashboardPage() {
         <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-3rem)] -translate-x-1/2 rounded-2xl border bg-background/90 p-3 shadow-lg backdrop-blur md:hidden">
           <div className="flex items-center justify-between gap-3 text-sm">
             <div>
-              <div className="text-xs text-muted-foreground">Check in now</div>
+              <div className="text-xs text-muted-foreground">Complete now</div>
               <div className="text-sm font-medium">{pendingGoal.goal.name}</div>
             </div>
             <Button asChild>

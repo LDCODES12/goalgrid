@@ -51,7 +51,7 @@ export async function checkInGoalAction(formData: FormData) {
     },
   })
   if (existing) {
-    return { ok: false, error: "Already checked in today." }
+    return { ok: false, error: "Already completed today." }
   }
 
   await prisma.checkIn.create({

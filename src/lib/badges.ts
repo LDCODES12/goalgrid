@@ -21,7 +21,7 @@ export function getBadges({
   today: Date
 }) {
   const badges: string[] = []
-  if (totalCheckIns > 0) badges.push("First Check-in")
+  if (totalCheckIns > 0) badges.push("First Completion")
   if (dailyStreaks.some((streak) => streak >= 7)) badges.push("7-day streak")
 
   const weekStart = getWeekStart(today, timeZone)
