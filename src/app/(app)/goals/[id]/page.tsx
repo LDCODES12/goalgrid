@@ -23,6 +23,7 @@ import { EditGoalDialog } from "@/components/edit-goal-dialog"
 import { TinyHeatmap } from "@/components/tiny-heatmap"
 import { MonthlyHeatmap } from "@/components/monthly-heatmap"
 import { Sparkline } from "@/components/sparkline"
+import { ActivityLogDialog } from "@/components/activity-log-dialog"
 
 export default async function GoalDetailPage({
   params,
@@ -103,6 +104,12 @@ export default async function GoalDetailPage({
     }
   })
 
+  // Build checkInsByDate map for ActivityLogDialog
+  const checkInsByDate: Record<string, number> = {}
+  for (const checkIn of checkIns) {
+    checkInsByDate[checkIn.localDateKey] = (checkInsByDate[checkIn.localDateKey] ?? 0) + 1
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -117,12 +124,19 @@ export default async function GoalDetailPage({
               : `Weekly target: ${goal.weeklyTarget}x`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <CheckInButton 
             goalId={goal.id} 
             completed={todayDone}
             todayCount={todayCount}
             dailyTarget={dailyTarget}
+          />
+          <ActivityLogDialog
+            goalId={goal.id}
+            goalName={goal.name}
+            dailyTarget={dailyTarget}
+            createdAt={goal.createdAt}
+            checkInsByDate={checkInsByDate}
           />
           <EditGoalDialog 
             goal={{
