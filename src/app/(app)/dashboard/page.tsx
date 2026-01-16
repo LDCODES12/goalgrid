@@ -27,7 +27,7 @@ import { CompletionRing } from "@/components/completion-ring"
 import { FocusModeToggle } from "@/components/focus-mode-toggle"
 import { TinyHeatmap } from "@/components/tiny-heatmap"
 import { Sparkline } from "@/components/sparkline"
-import { ReminderBanner } from "@/components/reminder-banner"
+import { DismissRemindersButton } from "@/components/dismiss-reminders-button"
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -59,6 +59,20 @@ export default async function DashboardPage() {
     id: reminder.id,
     senderName: reminder.sender.name,
   }))
+
+  // Fetch recent cheers on user's check-ins (last 7 days)
+  const recentCheers = await prisma.cheer.findMany({
+    where: {
+      checkIn: { userId: user.id },
+      createdAt: { gte: subDays(new Date(), 7) },
+    },
+    include: {
+      sender: { select: { name: true } },
+      checkIn: { include: { goal: { select: { name: true } } } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+  })
 
   const todayKey = getLocalDateKey(new Date(), user.timezone)
   const now = new Date()
@@ -241,7 +255,48 @@ export default async function DashboardPage() {
         </div>
       ) : null}
 
-      <ReminderBanner reminders={reminderItems} />
+      {/* Notifications - Reminders and Cheers */}
+      {(reminderItems.length > 0 || recentCheers.length > 0) && (
+        <div className="rounded-xl border bg-card p-4 space-y-3">
+          <div className="text-sm font-medium">Notifications</div>
+          
+          {/* Reminders */}
+          {reminderItems.length > 0 && (
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
+              <div className="text-sm">
+                <span className="font-medium text-amber-600 dark:text-amber-400">Nudge: </span>
+                <span className="text-muted-foreground">
+                  {reminderItems.map(r => r.senderName).join(", ")} reminded you to complete your goals
+                </span>
+              </div>
+              <DismissRemindersButton reminderIds={reminderItems.map(r => r.id)} />
+            </div>
+          )}
+          
+          {/* Cheers */}
+          {recentCheers.length > 0 && (
+            <div className="space-y-1.5">
+              {recentCheers.map((cheer) => (
+                <div 
+                  key={cheer.id}
+                  className="flex items-center justify-between text-sm rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2"
+                >
+                  <span>
+                    <span className="text-emerald-600 dark:text-emerald-400">👏</span>{" "}
+                    <span className="font-medium">{cheer.sender.name}</span>
+                    <span className="text-muted-foreground"> cheered your </span>
+                    <span className="font-medium">{cheer.checkIn.goal.name}</span>
+                    <span className="text-muted-foreground"> completion</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {cheer.createdAt.toLocaleDateString([], { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Hero Stats Card */}
       <div className="rounded-2xl border bg-gradient-to-br from-card to-card/50 p-6 shadow-sm" data-focus-hide="true">
