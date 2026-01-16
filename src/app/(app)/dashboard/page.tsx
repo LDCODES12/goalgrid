@@ -376,25 +376,15 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {!todayDone && goal.cadenceType === "DAILY" && !hasMultiTarget && (
-                          <CheckInButton
-                            goalId={goal.id}
-                            completed={false}
-                            label="Mini"
-                            isPartial={true}
-                          />
-                        )}
                         <CheckInButton
                           goalId={goal.id}
-                          completed={todayDone && !todayPartial}
+                          completed={todayDone}
                           label={
                             hasMultiTarget
                               ? todayDone 
                                 ? "Done" 
                                 : `+1 (${todayCount}/${dailyTarget})`
-                              : todayPartial 
-                                ? "Upgrade" 
-                                : "Complete"
+                              : "Complete"
                           }
                         />
                       </div>

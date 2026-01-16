@@ -149,18 +149,10 @@ export default async function GoalsPage() {
                   </div>
 
                   <div className="mt-4 flex items-center gap-2">
-                    {!todayDone && goal.cadenceType === "DAILY" && (
-                      <CheckInButton
-                        goalId={goal.id}
-                        completed={false}
-                        label="Mini"
-                        isPartial={true}
-                      />
-                    )}
                     <CheckInButton
                       goalId={goal.id}
-                      completed={todayDone && !todayPartial}
-                      label={todayPartial ? "Upgrade" : "Complete"}
+                      completed={todayDone}
+                      label="Complete"
                     />
                   </div>
                 </div>

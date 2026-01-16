@@ -115,13 +115,10 @@ export default async function GoalDetailPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {!todayDone && goal.cadenceType === "DAILY" && (
-            <CheckInButton goalId={goal.id} completed={false} label="Mini" isPartial={true} />
-          )}
           <CheckInButton 
             goalId={goal.id} 
-            completed={todayDone && !todayPartial} 
-            label={todayPartial ? "Upgrade" : "Complete"} 
+            completed={todayDone} 
+            label="Complete" 
           />
           <DeleteGoalButton goalId={goal.id} goalName={goal.name} />
         </div>
