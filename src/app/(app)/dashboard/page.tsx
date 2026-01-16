@@ -118,7 +118,8 @@ export default async function DashboardPage() {
     // Compute additional data for the draggable goals component
     const weeklyTargetVal = goal.weeklyTarget ?? 1
     const isWeekly = goal.cadenceType === "WEEKLY" && goal.weeklyTarget != null
-    const weekTarget = isWeekly ? weeklyTargetVal : 7
+    // For daily goals: weekTarget = dailyTarget * 7 (e.g., 3x/day = 21/week)
+    const weekTarget = isWeekly ? weeklyTargetVal : dailyTarget * 7
     const weekProgress = Math.min(100, Math.round((checkInsThisWeek.length / weekTarget) * 100))
     const last7Keys = Array.from({ length: 7 }).map((_, index) =>
       getLocalDateKey(subDays(now, 6 - index), user.timezone)
@@ -458,22 +459,25 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {todayGoals.map(({ goal, checkInsThisWeek }) => {
+            {todayGoals.map(({ goal, checkInsThisWeek, dailyTarget }) => {
               const isWeeklyGoal = goal.cadenceType === "WEEKLY" && goal.weeklyTarget != null
-              const weeklyTarget = isWeeklyGoal ? goal.weeklyTarget! : 7
+              // For daily goals: weeklyTarget = dailyTarget * 7 (e.g., 3x/day = 21/week)
+              const targetThisWeek = isWeeklyGoal ? goal.weeklyTarget! : dailyTarget * 7
               const done = checkInsThisWeek.length
-              const remainingRequired = Math.max(0, weeklyTarget - done)
+              const remainingRequired = Math.max(0, targetThisWeek - done)
               const remainingDays = Math.max(0, 7 - daysElapsed)
-              const progress = Math.min(100, Math.round((done / weeklyTarget) * 100))
+              const remainingCheckIns = remainingDays * dailyTarget // Max possible check-ins remaining
+              const progress = Math.min(100, Math.round((done / targetThisWeek) * 100))
               
-              // For daily goals: compare to days elapsed
-              // For weekly goals: check if you can still hit target
-              const missedDays = isWeeklyGoal ? 0 : Math.max(0, daysElapsed - done)
-              const canStillComplete = remainingRequired <= remainingDays
-              const isComplete = done >= weeklyTarget
-              const isPerfect = isWeeklyGoal 
-                ? done >= Math.ceil((weeklyTarget * daysElapsed) / 7)
-                : done >= daysElapsed
+              // Expected check-ins so far (for daily: dailyTarget * daysElapsed)
+              const expectedSoFar = isWeeklyGoal 
+                ? Math.ceil((goal.weeklyTarget! * daysElapsed) / 7) 
+                : dailyTarget * daysElapsed
+              const canStillComplete = isWeeklyGoal 
+                ? remainingRequired <= remainingDays 
+                : remainingRequired <= remainingCheckIns
+              const isComplete = done >= targetThisWeek
+              const isPerfect = done >= expectedSoFar
 
               // Status label logic - consistent for both goal types
               let statusLabel: string
@@ -510,7 +514,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-                      <span>{done}/{weeklyTarget} {isWeeklyGoal ? "this week" : "days"}</span>
+                      <span>{done}/{targetThisWeek} this week</span>
                       <span>{remainingRequired > 0 ? `${remainingRequired} left` : "Done!"}</span>
                     </div>
                     <Progress value={progress} className="h-1.5" />

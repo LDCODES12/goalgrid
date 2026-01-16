@@ -64,7 +64,8 @@ export default async function GoalsPage() {
             const weeklyTarget = goal.weeklyTarget ?? 1
             const isWeekly =
               goal.cadenceType === "WEEKLY" && goal.weeklyTarget != null
-            const weekTarget = isWeekly ? weeklyTarget : 7
+            // For daily goals: weekTarget = dailyTarget * 7 (e.g., 3x/day = 21/week)
+            const weekTarget = isWeekly ? weeklyTarget : dailyTarget * 7
             const weekProgress = Math.min(
               100,
               Math.round((weekCheckIns.length / weekTarget) * 100)
