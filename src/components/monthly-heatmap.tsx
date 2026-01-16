@@ -50,11 +50,11 @@ export function MonthlyHeatmap({
   // Find max for intensity
   const maxCount = Math.max(1, ...data.map((d) => d.count))
 
-  // Get month labels for first week of each month
+  // Get month labels - only show when month changes, with proper spacing
   const monthLabels: { label: string; colIndex: number }[] = []
   let lastMonth = -1
   weeks.forEach((week, colIndex) => {
-    const firstDay = week.find(d => d) // First day in week
+    const firstDay = week[0]
     if (firstDay) {
       const month = firstDay.date.getMonth()
       if (month !== lastMonth) {
@@ -64,43 +64,49 @@ export function MonthlyHeatmap({
     }
   })
 
+  // Cell size + gap
+  const cellSize = 10 // px
+  const gap = 2 // px
+  const cellTotal = cellSize + gap
+
   return (
     <div className={cn("text-xs", className)}>
-      <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">
-        Last 12 weeks
-      </div>
-      
-      {/* Month labels row */}
-      <div className="flex mb-1 ml-6">
-        {weeks.map((_, colIndex) => {
-          const monthLabel = monthLabels.find(m => m.colIndex === colIndex)
-          return (
-            <div key={colIndex} className="w-3 mr-[2px] text-[10px] text-muted-foreground">
-              {monthLabel?.label || ""}
-            </div>
-          )
-        })}
+      {/* Month labels row - positioned absolutely based on column index */}
+      <div className="relative h-4 mb-1" style={{ marginLeft: 20 }}>
+        {monthLabels.map(({ label, colIndex }) => (
+          <span
+            key={`${label}-${colIndex}`}
+            className="absolute text-[10px] text-muted-foreground"
+            style={{ left: colIndex * cellTotal }}
+          >
+            {label}
+          </span>
+        ))}
       </div>
 
       {/* Grid with day labels */}
       <div className="flex">
         {/* Day labels */}
-        <div className="flex flex-col mr-1 text-[10px] text-muted-foreground">
+        <div className="flex flex-col text-[10px] text-muted-foreground w-5 shrink-0">
           {["", "M", "", "W", "", "F", ""].map((label, i) => (
-            <div key={i} className="h-3 flex items-center justify-end pr-1">
+            <div 
+              key={i} 
+              className="flex items-center justify-end pr-1"
+              style={{ height: cellSize, marginBottom: i < 6 ? gap : 0 }}
+            >
               {label}
             </div>
           ))}
         </div>
 
         {/* Weeks grid */}
-        <div className="flex gap-[2px]">
+        <div className="flex" style={{ gap }}>
           {weeks.map((week, colIndex) => (
-            <div key={colIndex} className="flex flex-col gap-[2px]">
+            <div key={colIndex} className="flex flex-col" style={{ gap }}>
               {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => {
                 const day = week.find(d => getDay(d.date) === dayIndex)
                 if (!day) {
-                  return <div key={dayIndex} className="w-3 h-3" />
+                  return <div key={dayIndex} style={{ width: cellSize, height: cellSize }} />
                 }
                 
                 const dayData = dataMap.get(day.dateKey)
@@ -119,7 +125,8 @@ export function MonthlyHeatmap({
                 return (
                   <div
                     key={day.dateKey}
-                    className={cn("w-3 h-3 rounded-sm", bg)}
+                    className={cn("rounded-sm", bg)}
+                    style={{ width: cellSize, height: cellSize }}
                     title={`${format(day.date, "MMM d")}: ${count}`}
                   />
                 )
