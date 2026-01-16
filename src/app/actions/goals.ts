@@ -16,7 +16,9 @@ export async function createGoalAction(formData: FormData) {
     weeklyTarget: formData.get("weeklyTarget"),
     notes: formData.get("notes"),
   })
-  if (!parsed.success) return { ok: false, error: "Invalid goal data" }
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message }
+  }
 
   if (parsed.data.cadenceType === "WEEKLY" && !parsed.data.weeklyTarget) {
     return { ok: false, error: "Weekly goals need a target." }

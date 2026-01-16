@@ -22,7 +22,10 @@ export const joinGroupSchema = z.object({
 export const createGoalSchema = z.object({
   name: z.string().min(2),
   cadenceType: z.enum(["DAILY", "WEEKLY"]),
-  weeklyTarget: z.coerce.number().int().min(1).max(14).optional(),
+  weeklyTarget: z.preprocess(
+    (value) => (value === "" || value == null ? undefined : value),
+    z.coerce.number().int().min(1).max(14).optional()
+  ),
   notes: z.string().max(280).optional(),
 })
 
