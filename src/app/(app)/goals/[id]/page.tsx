@@ -26,8 +26,10 @@ import { Sparkline } from "@/components/sparkline"
 export default async function GoalDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
+  
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) redirect("/auth/signin")
 
@@ -37,7 +39,7 @@ export default async function GoalDetailPage({
   if (!user) redirect("/auth/signin")
 
   const goal = await prisma.goal.findFirst({
-    where: { id: params.id, ownerId: user.id },
+    where: { id, ownerId: user.id },
     include: { checkIns: true },
   })
   if (!goal) redirect("/goals")

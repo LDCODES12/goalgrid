@@ -36,12 +36,13 @@ export function DeleteGoalButton({
       const result = await deleteGoalAction(goalId)
       if (!result.ok) {
         toast.error(result.error ?? "Could not delete goal.")
+        setOpen(false)
         return
       }
       toast.success("Goal deleted")
       setOpen(false)
-      router.push("/goals")
-      router.refresh()
+      // Use replace to prevent back navigation to deleted goal page
+      router.replace("/goals")
     })
   }
 

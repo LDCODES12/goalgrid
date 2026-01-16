@@ -73,7 +73,9 @@ export async function deleteGoalAction(goalId: string) {
     where: { id: goalId },
   })
 
+  // Revalidate all paths that might show this goal
   revalidatePath("/goals")
+  revalidatePath(`/goals/${goalId}`)
   revalidatePath("/dashboard")
   revalidatePath("/group")
   return { ok: true }
