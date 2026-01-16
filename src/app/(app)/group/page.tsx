@@ -228,12 +228,12 @@ export default async function GroupPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Group pulse</CardTitle>
+            <CardTitle>Group progress</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-xl border bg-background px-3 py-3 text-sm">
               <div className="flex items-center justify-between">
-                <span>Checked in today</span>
+                <span>Completed today</span>
                 <span className="font-medium">
                   {pulseCheckedIn}/{sortedLeaderboard.length}
                 </span>
@@ -255,7 +255,7 @@ export default async function GroupPage() {
                     <span className="font-medium">{entry.member.user.name}</span>
                     <span className="text-xs text-muted-foreground">
                       {entry.goals.filter((goal) => goal.checkedToday).length}/
-                      {entry.goals.length} done
+                      {entry.goals.length} completed
                     </span>
                   </div>
                   <div className="mt-2 space-y-1 text-xs text-muted-foreground">
