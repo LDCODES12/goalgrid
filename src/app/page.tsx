@@ -25,12 +25,7 @@ export default async function Home() {
       {/* Header */}
       <header className="fixed top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-semibold">GoalGrid</span>
-          </div>
+          <div className="text-lg font-semibold">GoalGrid</div>
           <div className="flex items-center gap-3">
             <Link 
               href="/auth/signin" 
@@ -312,12 +307,7 @@ export default async function Home() {
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm text-muted-foreground md:flex-row">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-primary">
-              <Sparkles className="h-3 w-3 text-primary-foreground" />
-            </div>
-            <span>© {new Date().getFullYear()} GoalGrid</span>
-          </div>
+          <span>© {new Date().getFullYear()} GoalGrid</span>
           <div className="flex items-center gap-6">
             <Link href="#" className="hover:text-foreground transition-colors">Privacy</Link>
             <Link href="#" className="hover:text-foreground transition-colors">Terms</Link>
