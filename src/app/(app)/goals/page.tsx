@@ -66,20 +66,13 @@ export default async function GoalsPage() {
               const weeklyTarget = goal.weeklyTarget ?? 1
               const isWeekly =
                 goal.cadenceType === "WEEKLY" && goal.weeklyTarget != null
-              const target = isWeekly ? weeklyTarget : 1
-              const displayCount = isWeekly
-                ? weekCheckIns.length
-                : todayDone
-                ? 1
-                : 0
-              const progress = isWeekly
-                ? Math.min(
-                    100,
-                    Math.round((weekCheckIns.length / weeklyTarget) * 100)
-                  )
-                : todayDone
-                ? 100
-                : 0
+              const weekTarget = isWeekly ? weeklyTarget : 7
+              const todayCount = todayDone ? 1 : 0
+              const todayProgress = todayDone ? 100 : 0
+              const weekProgress = Math.min(
+                100,
+                Math.round((weekCheckIns.length / weekTarget) * 100)
+              )
               const streak = computeDailyStreak(
                 summarizeDailyCheckIns(checkIns),
                 todayKey
@@ -114,19 +107,17 @@ export default async function GoalsPage() {
                   </div>
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Today</span>
+                      <span>{todayCount}/1</span>
+                    </div>
+                    <Progress value={todayProgress} />
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>This week</span>
                       <span>
-                        {goal.cadenceType === "DAILY" ? "Today" : "This week"}
-                      </span>
-                      <span>
-                        {displayCount}/{target}
+                        {weekCheckIns.length}/{weekTarget}
                       </span>
                     </div>
-                    <Progress value={progress} />
-                    {goal.cadenceType === "DAILY" ? (
-                      <div className="text-[11px] text-muted-foreground">
-                        Week total: {weekCheckIns.length}/7
-                      </div>
-                    ) : null}
+                    <Progress value={weekProgress} />
                   </div>
                 </div>
               )

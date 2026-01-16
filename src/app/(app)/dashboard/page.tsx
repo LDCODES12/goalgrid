@@ -256,20 +256,13 @@ export default async function DashboardPage() {
                 const weeklyTarget = goal.weeklyTarget ?? 1
                 const isWeekly =
                   goal.cadenceType === "WEEKLY" && goal.weeklyTarget != null
-                const target = isWeekly ? weeklyTarget : 1
-                const displayCount = isWeekly
-                  ? checkInsThisWeek.length
-                  : todayDone
-                  ? 1
-                  : 0
-                const progress = isWeekly
-                  ? Math.min(
-                      100,
-                      Math.round((checkInsThisWeek.length / weeklyTarget) * 100)
-                    )
-                  : todayDone
-                  ? 100
-                  : 0
+                const weekTarget = isWeekly ? weeklyTarget : 7
+                const todayCount = todayDone ? 1 : 0
+                const weekProgress = Math.min(
+                  100,
+                  Math.round((checkInsThisWeek.length / weekTarget) * 100)
+                )
+                const todayProgress = todayDone ? 100 : 0
                 const last7Keys = Array.from({ length: 7 }).map((_, index) =>
                   getLocalDateKey(subDays(now, 6 - index), user.timezone)
                 )
@@ -307,19 +300,17 @@ export default async function DashboardPage() {
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Today</span>
+                        <span>{todayCount}/1</span>
+                      </div>
+                      <Progress value={todayProgress} />
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>This week</span>
                         <span>
-                          {goal.cadenceType === "DAILY" ? "Today" : "This week"}
-                        </span>
-                        <span>
-                          {displayCount}/{target}
+                          {checkInsThisWeek.length}/{weekTarget}
                         </span>
                       </div>
-                      <Progress value={progress} />
-                      {goal.cadenceType === "DAILY" ? (
-                        <div className="text-[11px] text-muted-foreground">
-                          Week total: {checkInsThisWeek.length}/7
-                        </div>
-                      ) : null}
+                      <Progress value={weekProgress} />
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
                       <div className="flex items-center gap-2">
