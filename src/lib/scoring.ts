@@ -1,5 +1,6 @@
-import { parseISO, subDays, addDays, differenceInDays } from "date-fns"
-import { getLocalDateKey, getWeekEnd, getWeekKey, getWeekStart } from "./time"
+import { subDays, addDays, startOfDay } from "date-fns"
+import { toZonedTime, formatInTimeZone } from "date-fns-tz"
+import { getLocalDateKey, getWeekKey, getWeekStart } from "./time"
 
 type GoalConfig = {
   cadenceType: "DAILY" | "WEEKLY"
@@ -30,6 +31,18 @@ function isDayComplete(counts: Map<string, number>, dateKey: string, dailyTarget
 }
 
 /**
+ * Helper: Get date key for N days before a reference date
+ * Uses noon UTC to avoid timezone boundary issues when subtracting days
+ */
+function getDateKeyDaysAgo(daysAgo: number, referenceKey: string, timeZone: string): string {
+  // Parse the reference date at noon UTC to avoid timezone issues
+  const refDate = new Date(referenceKey + "T12:00:00Z")
+  const pastDate = subDays(refDate, daysAgo)
+  // Format back to YYYY-MM-DD (timezone doesn't matter since we used noon UTC)
+  return formatInTimeZone(pastDate, "UTC", "yyyy-MM-dd")
+}
+
+/**
  * Compute current daily streak (consecutive days of completion starting from today)
  * For multi-target goals, only counts days where target was fully met
  */
@@ -41,12 +54,15 @@ export function computeDailyStreak(
 ) {
   const counts = countByDate(checkInDateKeys)
   let streak = 0
-  let cursor = todayKey
   
-  while (isDayComplete(counts, cursor, dailyTarget)) {
-    streak += 1
-    const cursorDate = parseISO(cursor)
-    cursor = getLocalDateKey(subDays(cursorDate, 1), timeZone)
+  // Start from today and go backwards
+  for (let i = 0; i < 365; i++) {
+    const dateKey = getDateKeyDaysAgo(i, todayKey, timeZone)
+    if (isDayComplete(counts, dateKey, dailyTarget)) {
+      streak++
+    } else {
+      break
+    }
   }
   return streak
 }
@@ -75,11 +91,18 @@ export function computeBestDailyStreak(
   let best = 1
   let current = 1
   
-  for (let i = 1; i < completeDays.length; i += 1) {
-    const prev = parseISO(completeDays[i - 1])
-    const expected = getLocalDateKey(addDays(prev, 1), timeZone)
-    if (completeDays[i] === expected) {
-      current += 1
+  // Check consecutive days
+  for (let i = 1; i < completeDays.length; i++) {
+    // Compare dates by checking if they're consecutive
+    const prevDate = completeDays[i - 1]
+    const currDate = completeDays[i]
+    
+    // Get expected next day from previous date
+    const prevDateObj = new Date(prevDate + "T12:00:00Z") // Use noon to avoid timezone issues
+    const expectedNext = formatInTimeZone(addDays(prevDateObj, 1), "UTC", "yyyy-MM-dd")
+    
+    if (currDate === expectedNext) {
+      current++
       best = Math.max(best, current)
     } else {
       current = 1
@@ -161,31 +184,32 @@ export function computeConsistencyPercentage(
   goalCreatedAt?: Date,
   dailyTarget: number = 1
 ): number {
+  // Ensure dailyTarget is at least 1
+  const target = Math.max(1, dailyTarget ?? 1)
   const counts = countByDate(checkInDateKeys)
   
   let completed = 0
   let totalDays = 0
-  let cursor = todayKey
   
   // Calculate the earliest date key to consider (goal creation date)
   const createdDateKey = goalCreatedAt 
     ? getLocalDateKey(goalCreatedAt, timeZone) 
     : null
 
+  // Iterate through days properly using timezone-aware calculation
   for (let i = 0; i < days; i++) {
+    const dateKey = getDateKeyDaysAgo(i, todayKey, timeZone)
+    
     // Stop if we've gone past the goal creation date
-    if (createdDateKey && cursor < createdDateKey) {
+    if (createdDateKey && dateKey < createdDateKey) {
       break
     }
     
     totalDays++
     
-    if (isDayComplete(counts, cursor, dailyTarget)) {
+    if (isDayComplete(counts, dateKey, target)) {
       completed++
     }
-    
-    const cursorDate = parseISO(cursor)
-    cursor = getLocalDateKey(subDays(cursorDate, 1), timeZone)
   }
 
   if (totalDays === 0) return 100 // Goal was just created
@@ -205,25 +229,29 @@ export function computeGracefulStreak(
   allowedFreezes: number = 1,
   dailyTarget: number = 1
 ): { currentStreak: number; freezesUsed: number; isAtRisk: boolean } {
+  // Ensure dailyTarget is at least 1
+  const target = Math.max(1, dailyTarget ?? 1)
   const counts = countByDate(checkInDateKeys)
   let streak = 0
   let freezesUsed = 0
   let consecutiveMisses = 0
-  let cursor = todayKey
   let isAtRisk = false
 
   // Check if today is done (target met)
-  const todayDone = isDayComplete(counts, todayKey, dailyTarget)
+  const todayDone = isDayComplete(counts, todayKey, target)
   if (!todayDone) {
     // Check yesterday - if yesterday was done, streak is at risk but not broken
-    const yesterdayKey = getLocalDateKey(subDays(parseISO(todayKey), 1), timeZone)
-    if (isDayComplete(counts, yesterdayKey, dailyTarget)) {
+    const yesterdayKey = getDateKeyDaysAgo(1, todayKey, timeZone)
+    if (isDayComplete(counts, yesterdayKey, target)) {
       isAtRisk = true
     }
   }
 
-  while (true) {
-    if (isDayComplete(counts, cursor, dailyTarget)) {
+  // Iterate through days
+  for (let i = 0; i < 365; i++) {
+    const dateKey = getDateKeyDaysAgo(i, todayKey, timeZone)
+    
+    if (isDayComplete(counts, dateKey, target)) {
       streak++
       consecutiveMisses = 0
     } else {
@@ -235,11 +263,6 @@ export function computeGracefulStreak(
       // Use a freeze
       freezesUsed++
     }
-    const cursorDate = parseISO(cursor)
-    cursor = getLocalDateKey(subDays(cursorDate, 1), timeZone)
-    
-    // Safety limit to prevent infinite loops
-    if (streak + freezesUsed > 365) break
   }
 
   return { currentStreak: streak, freezesUsed, isAtRisk }
@@ -275,16 +298,16 @@ export function countRecentCompletions(
   days: number = 30,
   dailyTarget: number = 1
 ): number {
+  // Ensure dailyTarget is at least 1
+  const target = Math.max(1, dailyTarget ?? 1)
   const counts = countByDate(checkInDateKeys)
   let completed = 0
-  let cursor = todayKey
 
   for (let i = 0; i < days; i++) {
-    if (isDayComplete(counts, cursor, dailyTarget)) {
+    const dateKey = getDateKeyDaysAgo(i, todayKey, timeZone)
+    if (isDayComplete(counts, dateKey, target)) {
       completed++
     }
-    const cursorDate = parseISO(cursor)
-    cursor = getLocalDateKey(subDays(cursorDate, 1), timeZone)
   }
 
   return completed
