@@ -339,7 +339,9 @@ export default async function DashboardPage() {
                                   : "border-2 border-muted-foreground/30"
                             }`}
                           />
-                          <span className="font-medium">{goal.name}</span>
+                          <Link href={`/goals/${goal.id}`} className="font-medium hover:underline">
+                            {goal.name}
+                          </Link>
                           <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                             {consistency}%
                           </Badge>
@@ -406,7 +408,9 @@ export default async function DashboardPage() {
                   className="rounded-xl border bg-card p-4 space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">{goal.name}</div>
+                    <Link href={`/goals/${goal.id}`} className="text-sm font-medium hover:underline">
+                      {goal.name}
+                    </Link>
                     <Badge variant="secondary">
                       {consistency}% consistency
                     </Badge>
@@ -499,7 +503,9 @@ export default async function DashboardPage() {
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium truncate">{goal.name}</span>
+                    <Link href={`/goals/${goal.id}`} className="font-medium truncate hover:underline">
+                      {goal.name}
+                    </Link>
                     <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${statusStyle}`}>
                       {statusLabel}
                     </span>

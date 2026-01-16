@@ -1,12 +1,11 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { subDays, format, getDay } from "date-fns"
+import { subDays, format, getDay, startOfWeek } from "date-fns"
 
 type DayData = {
   date: string // YYYY-MM-DD
   count: number
-  isPartial?: boolean
 }
 
 export function MonthlyHeatmap({
@@ -16,139 +15,118 @@ export function MonthlyHeatmap({
   data: DayData[]
   className?: string
 }) {
-  // Create a map for quick lookup
   const dataMap = new Map(data.map((d) => [d.date, d]))
-
-  // Generate last 12 weeks (84 days) of data
   const today = new Date()
-  const days: { date: Date; dateKey: string }[] = []
-
-  // Start from 83 days ago to today
-  for (let i = 83; i >= 0; i--) {
-    const date = subDays(today, i)
-    days.push({
-      date,
-      dateKey: format(date, "yyyy-MM-dd"),
-    })
-  }
-
-  // Group by weeks (columns)
-  const weeks: typeof days[] = []
-  let currentWeek: typeof days = []
-
-  for (const day of days) {
-    const dayOfWeek = getDay(day.date) // 0 = Sunday
+  
+  // Find the Sunday 11 weeks ago (12 weeks total including this week)
+  const startDate = startOfWeek(subDays(today, 77), { weekStartsOn: 0 })
+  
+  // Generate all days from startDate to today
+  const totalDays = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  
+  // Build weeks array (each week is an array of 7 days, Sunday-Saturday)
+  const weeks: { date: Date; dateKey: string }[][] = []
+  let currentWeek: { date: Date; dateKey: string }[] = []
+  
+  for (let i = 0; i < totalDays; i++) {
+    const date = new Date(startDate)
+    date.setDate(startDate.getDate() + i)
+    const dayOfWeek = getDay(date)
+    
     if (dayOfWeek === 0 && currentWeek.length > 0) {
       weeks.push(currentWeek)
       currentWeek = []
     }
-    currentWeek.push(day)
+    
+    currentWeek.push({
+      date,
+      dateKey: format(date, "yyyy-MM-dd"),
+    })
   }
   if (currentWeek.length > 0) {
     weeks.push(currentWeek)
   }
 
-  // Find max for intensity calculation
+  // Find max for intensity
   const maxCount = Math.max(1, ...data.map((d) => d.count))
 
-  // Month labels
-  const months = new Set<string>()
-  const monthPositions: { label: string; weekIndex: number }[] = []
-  weeks.forEach((week, weekIndex) => {
-    const firstDay = week[0]
+  // Get month labels for first week of each month
+  const monthLabels: { label: string; colIndex: number }[] = []
+  let lastMonth = -1
+  weeks.forEach((week, colIndex) => {
+    const firstDay = week.find(d => d) // First day in week
     if (firstDay) {
-      const monthLabel = format(firstDay.date, "MMM")
-      if (!months.has(monthLabel)) {
-        months.add(monthLabel)
-        monthPositions.push({ label: monthLabel, weekIndex })
+      const month = firstDay.date.getMonth()
+      if (month !== lastMonth) {
+        monthLabels.push({ label: format(firstDay.date, "MMM"), colIndex })
+        lastMonth = month
       }
     }
   })
 
   return (
-    <div className={cn("space-y-1", className)}>
-      {/* Month labels - simplified positioning */}
-      <div className="flex text-[10px] text-muted-foreground mb-1">
-        <div className="w-5 shrink-0" /> {/* Spacer for day labels */}
-        <div className="flex gap-0.5">
-          {weeks.map((week, weekIndex) => {
-            const firstDay = week[0]
-            const monthLabel = firstDay ? format(firstDay.date, "MMM") : ""
-            const showLabel = monthPositions.some(m => m.weekIndex === weekIndex)
-            return (
-              <div key={weekIndex} className="w-2 text-center">
-                {showLabel && <span className="whitespace-nowrap">{monthLabel}</span>}
-              </div>
-            )
-          })}
-        </div>
+    <div className={cn("text-xs", className)}>
+      <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-2">
+        Last 12 weeks
+      </div>
+      
+      {/* Month labels row */}
+      <div className="flex mb-1 ml-6">
+        {weeks.map((_, colIndex) => {
+          const monthLabel = monthLabels.find(m => m.colIndex === colIndex)
+          return (
+            <div key={colIndex} className="w-3 mr-[2px] text-[10px] text-muted-foreground">
+              {monthLabel?.label || ""}
+            </div>
+          )
+        })}
       </div>
 
-      <div className="flex gap-0.5">
+      {/* Grid with day labels */}
+      <div className="flex">
         {/* Day labels */}
-        <div className="flex flex-col gap-0.5 text-[9px] text-muted-foreground pr-1">
-          <span className="h-2" /> {/* Sun */}
-          <span className="h-2">M</span>
-          <span className="h-2" /> {/* Tue */}
-          <span className="h-2">W</span>
-          <span className="h-2" /> {/* Thu */}
-          <span className="h-2">F</span>
-          <span className="h-2" /> {/* Sat */}
+        <div className="flex flex-col mr-1 text-[10px] text-muted-foreground">
+          {["", "M", "", "W", "", "F", ""].map((label, i) => (
+            <div key={i} className="h-3 flex items-center justify-end pr-1">
+              {label}
+            </div>
+          ))}
         </div>
 
-        {/* Grid */}
-        <div className="flex gap-0.5">
-          {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex flex-col gap-0.5">
-              {/* Pad the first week if it doesn't start on Sunday */}
-              {weekIndex === 0 &&
-                Array.from({ length: getDay(week[0].date) }).map((_, i) => (
-                  <div key={`pad-${i}`} className="h-2 w-2" />
-                ))}
-              {week.map((day) => {
+        {/* Weeks grid */}
+        <div className="flex gap-[2px]">
+          {weeks.map((week, colIndex) => (
+            <div key={colIndex} className="flex flex-col gap-[2px]">
+              {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => {
+                const day = week.find(d => getDay(d.date) === dayIndex)
+                if (!day) {
+                  return <div key={dayIndex} className="w-3 h-3" />
+                }
+                
                 const dayData = dataMap.get(day.dateKey)
                 const count = dayData?.count ?? 0
-                const isPartial = dayData?.isPartial ?? false
                 const intensity = count / maxCount
 
-                let bg = "bg-muted"
+                let bg = "bg-muted/50"
                 if (count > 0) {
-                  if (isPartial) {
-                    bg = intensity < 0.5 ? "bg-amber-400/50" : "bg-amber-500"
-                  } else {
-                    bg =
-                      intensity < 0.33
-                        ? "bg-emerald-400/40"
-                        : intensity < 0.66
-                        ? "bg-emerald-500/70"
-                        : "bg-emerald-500"
-                  }
+                  bg = intensity < 0.33
+                    ? "bg-emerald-500/40"
+                    : intensity < 0.66
+                    ? "bg-emerald-500/70"
+                    : "bg-emerald-500"
                 }
 
                 return (
                   <div
                     key={day.dateKey}
-                    className={cn(
-                      "h-2 w-2 rounded-[2px] transition-colors",
-                      bg
-                    )}
-                    title={`${format(day.date, "MMM d")}: ${count} completion${count !== 1 ? "s" : ""}${isPartial ? " (partial)" : ""}`}
+                    className={cn("w-3 h-3 rounded-sm", bg)}
+                    title={`${format(day.date, "MMM d")}: ${count}`}
                   />
                 )
               })}
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center justify-end gap-1 text-[10px] text-muted-foreground pt-1">
-        <span>Less</span>
-        <div className="h-2 w-2 rounded-[2px] bg-muted" />
-        <div className="h-2 w-2 rounded-[2px] bg-emerald-400/40" />
-        <div className="h-2 w-2 rounded-[2px] bg-emerald-500/70" />
-        <div className="h-2 w-2 rounded-[2px] bg-emerald-500" />
-        <span>More</span>
       </div>
     </div>
   )
