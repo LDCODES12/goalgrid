@@ -263,18 +263,7 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            {pendingGoal ? (
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <CheckInButton
-                  goalId={pendingGoal.goal.id}
-                  completed={pendingGoal.todayDone}
-                  label={`Complete: ${pendingGoal.goal.name}`}
-                />
-                <span className="text-xs text-muted-foreground">
-                  One tap logs today&apos;s progress
-                </span>
-              </div>
-            ) : (
+            {!pendingGoal && (
               <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-sm text-emerald-600 dark:text-emerald-400">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 All caught up for today
@@ -566,45 +555,8 @@ export default async function DashboardPage() {
           </div>
         </div>
         
-        <div className="rounded-xl border bg-card p-5">
-          <h3 className="font-semibold mb-3">Quick Links</h3>
-          <div className="flex flex-wrap gap-2">
-            <Link 
-              href="/goals" 
-              className="inline-flex items-center rounded-lg bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
-            >
-              All goals
-            </Link>
-            <Link 
-              href="/group" 
-              className="inline-flex items-center rounded-lg bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
-            >
-              Group
-            </Link>
-            <Link 
-              href="/settings" 
-              className="inline-flex items-center rounded-lg bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 transition-colors"
-            >
-              Settings
-            </Link>
-          </div>
-        </div>
       </div>
 
-      {/* Mobile CTA */}
-      {pendingGoal ? (
-        <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-xl border bg-background/95 p-3 shadow-xl backdrop-blur-sm md:hidden">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs text-muted-foreground">Next up</div>
-              <div className="font-medium">{pendingGoal.goal.name}</div>
-            </div>
-            <Button asChild size="sm">
-              <a href="#today">Complete</a>
-            </Button>
-          </div>
-        </div>
-      ) : null}
     </div>
   )
 }
