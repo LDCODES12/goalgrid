@@ -222,11 +222,8 @@ export async function logHistoricalCheckInAction({
     return { ok: false, error: "Can only log activity for past dates." }
   }
 
-  // Validate: date must be on or after goal creation
-  const goalCreatedKey = getLocalDateKey(goal.createdAt, user.timezone)
-  if (date < goalCreatedKey) {
-    return { ok: false, error: "Cannot log activity before the goal was created." }
-  }
+  // Note: We intentionally allow dates before the goal was created
+  // This lets users backfill historical data from before they started using GoalGrid
 
   // Validate count
   const dailyTarget = goal.dailyTarget ?? 1

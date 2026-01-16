@@ -135,7 +135,6 @@ export default async function GoalDetailPage({
             goalId={goal.id}
             goalName={goal.name}
             dailyTarget={dailyTarget}
-            createdAt={goal.createdAt}
             checkInsByDate={checkInsByDate}
           />
           <EditGoalDialog 

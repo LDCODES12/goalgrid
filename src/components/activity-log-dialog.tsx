@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { format, parseISO, isBefore, startOfDay, isAfter } from "date-fns"
+import { format, startOfDay } from "date-fns"
 import { CalendarIcon, Minus, Plus, Check } from "lucide-react"
 import { toast } from "sonner"
 import { logHistoricalCheckInAction } from "@/app/actions/checkins"
@@ -22,7 +22,6 @@ interface ActivityLogDialogProps {
   goalId: string
   goalName: string
   dailyTarget: number
-  createdAt: Date
   // Map of date (YYYY-MM-DD) to completion count
   checkInsByDate: Record<string, number>
 }
@@ -31,7 +30,6 @@ export function ActivityLogDialog({
   goalId,
   goalName,
   dailyTarget,
-  createdAt,
   checkInsByDate,
 }: ActivityLogDialogProps) {
   const [open, setOpen] = useState(false)
@@ -43,7 +41,6 @@ export function ActivityLogDialog({
 
   // Get today at midnight for comparison
   const today = startOfDay(new Date())
-  const goalCreatedDate = startOfDay(createdAt)
 
   // When a date is selected, load its count
   useEffect(() => {
@@ -120,10 +117,9 @@ export function ActivityLogDialog({
     partial: "bg-amber-500/20 text-amber-600 dark:text-amber-400",
   }
 
-  // Disable future dates and dates before goal creation
+  // Only disable future dates - allow backfilling before goal was created
   const disabledDays = [
-    { from: today, to: new Date(2100, 0, 1) }, // Future dates
-    { from: new Date(1900, 0, 1), to: startOfDay(new Date(goalCreatedDate.getTime() - 86400000)) }, // Before goal creation
+    { from: today, to: new Date(2100, 0, 1) }, // Future dates (today and beyond)
   ]
 
   return (
@@ -138,7 +134,8 @@ export function ActivityLogDialog({
         <DialogHeader>
           <DialogTitle>Log Past Activity</DialogTitle>
           <DialogDescription>
-            Record completions for <span className="font-medium text-foreground">{goalName}</span> on past dates.
+            Backfill historical data for <span className="font-medium text-foreground">{goalName}</span>. 
+            Perfect for importing progress from before you started using GoalGrid.
           </DialogDescription>
         </DialogHeader>
 
