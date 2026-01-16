@@ -245,22 +245,50 @@ export default async function GroupPage() {
                 />
               </div>
             </div>
-            <div className="space-y-3 text-sm">
-              {nudges.length === 0 ? (
-                <div className="text-muted-foreground">
-                  Everyone has checked in today. 🎉
-                </div>
-              ) : (
-                nudges.map((entry) => (
-                  <div
-                    key={entry.member.id}
-                    className="flex items-center justify-between rounded-xl border bg-background px-3 py-2"
-                  >
-                    <span>{entry.member.user.name}</span>
-                    <RemindButton name={entry.member.user.name} />
+            <div className="space-y-2 text-sm">
+              {todaySnapshots.map((entry) => (
+                <div
+                  key={entry.member.id}
+                  className="rounded-xl border bg-background px-3 py-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{entry.member.user.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {entry.goals.filter((goal) => goal.checkedToday).length}/
+                      {entry.goals.length} done
+                    </span>
                   </div>
-                ))
-              )}
+                  <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                    {entry.goals.length === 0 ? (
+                      <div>No goals yet.</div>
+                    ) : (
+                      entry.goals.slice(0, 2).map((goal) => (
+                        <div
+                          key={goal.goal.id}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="truncate">{goal.goal.name}</span>
+                          <span
+                            className={`h-2 w-2 rounded-full ${
+                              goal.checkedToday
+                                ? "bg-emerald-500"
+                                : "bg-muted"
+                            }`}
+                          />
+                        </div>
+                      ))
+                    )}
+                    {entry.goals.length > 2 ? (
+                      <div>+ {entry.goals.length - 2} more</div>
+                    ) : null}
+                  </div>
+                  {!entry.checkedInToday ? (
+                    <div className="mt-2">
+                      <RemindButton name={entry.member.user.name} />
+                    </div>
+                  ) : null}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
