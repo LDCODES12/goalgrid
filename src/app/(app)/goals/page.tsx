@@ -148,11 +148,12 @@ export default async function GoalsPage() {
                     <Progress value={weekProgress} className="h-1.5" />
                   </div>
 
-                  <div className="mt-4 flex items-center gap-2">
+                  <div className="mt-4">
                     <CheckInButton
                       goalId={goal.id}
                       completed={todayDone}
-                      label="Complete"
+                      todayCount={todayCount}
+                      dailyTarget={dailyTarget}
                     />
                   </div>
                 </div>

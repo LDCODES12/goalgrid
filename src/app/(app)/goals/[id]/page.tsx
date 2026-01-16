@@ -117,8 +117,9 @@ export default async function GoalDetailPage({
         <div className="flex items-center gap-2">
           <CheckInButton 
             goalId={goal.id} 
-            completed={todayDone} 
-            label="Complete" 
+            completed={todayDone}
+            todayCount={todayCount}
+            dailyTarget={dailyTarget}
           />
           <DeleteGoalButton goalId={goal.id} goalName={goal.name} />
         </div>

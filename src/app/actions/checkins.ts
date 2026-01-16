@@ -8,6 +8,62 @@ import { checkInSchema } from "@/lib/validators"
 import { getLocalDateKey, getWeekKey } from "@/lib/time"
 import { computeDailyStreak, summarizeDailyCheckIns } from "@/lib/scoring"
 
+/**
+ * Undo the most recent check-in for a goal today
+ * For single-target goals: removes the check-in
+ * For multi-target goals: removes the most recent one (decrements count)
+ */
+export async function undoCheckInAction(goalId: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) return { ok: false, error: "Unauthorized" }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+  })
+  if (!user) return { ok: false, error: "User not found." }
+
+  const goal = await prisma.goal.findFirst({
+    where: {
+      id: goalId,
+      ownerId: session.user.id,
+    },
+  })
+  if (!goal) return { ok: false, error: "Goal not found or not yours." }
+
+  const localDateKey = getLocalDateKey(new Date(), user.timezone)
+
+  // Find today's check-ins, ordered by most recent first
+  const todayCheckIns = await prisma.checkIn.findMany({
+    where: {
+      goalId: goal.id,
+      userId: session.user.id,
+      localDateKey,
+    },
+    orderBy: { timestamp: "desc" },
+  })
+
+  if (todayCheckIns.length === 0) {
+    return { ok: false, error: "No check-ins to undo today." }
+  }
+
+  // Delete the most recent check-in
+  await prisma.checkIn.delete({
+    where: { id: todayCheckIns[0].id },
+  })
+
+  revalidatePath("/dashboard")
+  revalidatePath("/group")
+  revalidatePath("/goals")
+  revalidatePath(`/goals/${goal.id}`)
+
+  const newCount = todayCheckIns.length - 1
+  return { 
+    ok: true, 
+    todayCount: newCount,
+    dailyTarget: goal.dailyTarget ?? 1,
+  }
+}
+
 export async function checkInGoalAction(formData: FormData) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return { ok: false, error: "Unauthorized" }

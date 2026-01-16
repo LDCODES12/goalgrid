@@ -375,19 +375,12 @@ export default async function DashboardPage() {
                           <span>{checkInsThisWeek.length}/{weekTarget} this week</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <CheckInButton
-                          goalId={goal.id}
-                          completed={todayDone}
-                          label={
-                            hasMultiTarget
-                              ? todayDone 
-                                ? "Done" 
-                                : `+1 (${todayCount}/${dailyTarget})`
-                              : "Complete"
-                          }
-                        />
-                      </div>
+                      <CheckInButton
+                        goalId={goal.id}
+                        completed={todayDone}
+                        todayCount={todayCount}
+                        dailyTarget={dailyTarget}
+                      />
                     </div>
                     
                     <div className="mt-3 space-y-2">
