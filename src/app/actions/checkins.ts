@@ -16,6 +16,7 @@ import {
   isGoalActiveForWeek,
   milliToDisplay,
 } from "@/lib/points"
+import { backfillUserPointsAction } from "./points"
 
 /**
  * Undo the most recent check-in for a goal today
@@ -419,6 +420,9 @@ export async function logHistoricalCheckInAction({
 
   const existingCount = existingCheckIns.length
 
+  // Track if we're adding check-ins (for points)
+  let addedCheckIns = false
+
   // Use a transaction to update the check-ins
   await prisma.$transaction(async (tx) => {
     if (count > existingCount) {
@@ -433,16 +437,47 @@ export async function logHistoricalCheckInAction({
         isPartial: false,
       }))
       await tx.checkIn.createMany({ data: newCheckIns })
+      addedCheckIns = true
     } else if (count < existingCount) {
-      // Need to remove check-ins
+      // Need to remove check-ins - also remove their point ledger entries
       const toRemove = existingCount - count
       const idsToDelete = existingCheckIns.slice(0, toRemove).map((c) => c.id)
+      
+      // Delete associated ledger entries first
+      await tx.pointLedger.deleteMany({
+        where: { sourceId: { in: idsToDelete } },
+      })
+      
       await tx.checkIn.deleteMany({
         where: { id: { in: idsToDelete } },
       })
     }
     // If count === existingCount, nothing to do
   })
+
+  // Award points for newly added historical check-ins
+  if (addedCheckIns) {
+    await backfillUserPointsAction()
+  } else if (count < existingCount) {
+    // Recalculate user totals after removing check-ins
+    const currentWeekKey = getWeekKey(new Date(), user.timezone)
+    const lifetimeTotal = await prisma.pointLedger.aggregate({
+      where: { userId: session.user.id },
+      _sum: { pointsMilli: true },
+    })
+    const weekTotal = await prisma.pointLedger.aggregate({
+      where: { userId: session.user.id, weekKey: currentWeekKey },
+      _sum: { pointsMilli: true },
+    })
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        pointsLifetimeMilli: lifetimeTotal._sum.pointsMilli ?? 0,
+        pointsWeekMilli: weekTotal._sum.pointsMilli ?? 0,
+        pointsWeekKey: currentWeekKey,
+      },
+    })
+  }
 
   revalidatePath("/dashboard")
   revalidatePath("/group")
@@ -675,6 +710,10 @@ export async function bulkLogHistoricalAction({
   // Execute changes in a transaction
   await prisma.$transaction(async (tx) => {
     if (toDelete.length > 0) {
+      // Delete associated ledger entries first
+      await tx.pointLedger.deleteMany({
+        where: { sourceId: { in: toDelete } },
+      })
       await tx.checkIn.deleteMany({
         where: { id: { in: toDelete } },
       })
@@ -692,6 +731,30 @@ export async function bulkLogHistoricalAction({
       })
     }
   })
+
+  // Award points for newly added historical check-ins
+  if (toCreate.length > 0) {
+    await backfillUserPointsAction()
+  } else if (toDelete.length > 0) {
+    // Recalculate user totals after removing check-ins
+    const currentWeekKey = getWeekKey(new Date(), user.timezone)
+    const lifetimeTotal = await prisma.pointLedger.aggregate({
+      where: { userId: session.user.id },
+      _sum: { pointsMilli: true },
+    })
+    const weekTotal = await prisma.pointLedger.aggregate({
+      where: { userId: session.user.id, weekKey: currentWeekKey },
+      _sum: { pointsMilli: true },
+    })
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        pointsLifetimeMilli: lifetimeTotal._sum.pointsMilli ?? 0,
+        pointsWeekMilli: weekTotal._sum.pointsMilli ?? 0,
+        pointsWeekKey: currentWeekKey,
+      },
+    })
+  }
 
   revalidatePath("/dashboard")
   revalidatePath("/group")
