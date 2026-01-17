@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { format, startOfDay, subDays, subWeeks, subMonths } from "date-fns"
+import { format, startOfDay, subDays } from "date-fns"
 import { CalendarIcon, Minus, Plus, Check, CalendarRange, Repeat, Flame } from "lucide-react"
 import { toast } from "sonner"
 import { logHistoricalCheckInAction, bulkLogHistoricalAction } from "@/app/actions/checkins"
@@ -245,31 +245,31 @@ export function ActivityLogDialog({
           Log Past Activity
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[440px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Log Past Activity</DialogTitle>
           <DialogDescription>
-            Backfill historical data for <span className="font-medium text-foreground">{goalName}</span>.
+            Record historical completions for <span className="font-medium text-foreground">{goalName}</span>
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="single" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="single" className="text-xs">
-              <CalendarIcon className="h-3 w-3 mr-1" />
-              Day
+          <TabsList className="grid w-full grid-cols-4 h-9">
+            <TabsTrigger value="single" className="text-xs gap-1">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Single</span>
             </TabsTrigger>
-            <TabsTrigger value="range" className="text-xs">
-              <CalendarRange className="h-3 w-3 mr-1" />
-              Range
+            <TabsTrigger value="range" className="text-xs gap-1">
+              <CalendarRange className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Range</span>
             </TabsTrigger>
-            <TabsTrigger value="pattern" className="text-xs">
-              <Repeat className="h-3 w-3 mr-1" />
-              Pattern
+            <TabsTrigger value="pattern" className="text-xs gap-1">
+              <Repeat className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Pattern</span>
             </TabsTrigger>
-            <TabsTrigger value="streak" className="text-xs">
-              <Flame className="h-3 w-3 mr-1" />
-              Streak
+            <TabsTrigger value="streak" className="text-xs gap-1">
+              <Flame className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Streak</span>
             </TabsTrigger>
           </TabsList>
 
@@ -319,99 +319,104 @@ export function ActivityLogDialog({
           </TabsContent>
 
           {/* Date Range Tab */}
-          <TabsContent value="range" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs">From</Label>
-                <Calendar
-                  mode="single"
-                  selected={rangeStart}
-                  onSelect={setRangeStart}
-                  disabled={disabledDays}
-                  defaultMonth={subMonths(yesterday, 1)}
-                  className="rounded-md border text-xs"
-                  modifiers={modifiers}
-                  modifiersClassNames={modifiersClassNames}
+          <TabsContent value="range" className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Log activity for every day in a date range.
+            </p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Start Date</Label>
+                <Input
+                  type="date"
+                  value={rangeStart ? format(rangeStart, "yyyy-MM-dd") : ""}
+                  onChange={(e) => setRangeStart(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
+                  max={format(yesterday, "yyyy-MM-dd")}
+                  className="h-9"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs">To</Label>
-                <Calendar
-                  mode="single"
-                  selected={rangeEnd}
-                  onSelect={setRangeEnd}
-                  disabled={disabledDays}
-                  defaultMonth={yesterday}
-                  className="rounded-md border text-xs"
-                  modifiers={modifiers}
-                  modifiersClassNames={modifiersClassNames}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">End Date</Label>
+                <Input
+                  type="date"
+                  value={rangeEnd ? format(rangeEnd, "yyyy-MM-dd") : ""}
+                  onChange={(e) => setRangeEnd(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
+                  max={format(yesterday, "yyyy-MM-dd")}
+                  className="h-9"
                 />
               </div>
             </div>
 
-            <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Completions per day</span>
-                <CountPicker value={rangeCount} onChange={setRangeCount} max={dailyTarget} />
-              </div>
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+              {isMultiTarget && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Completions per day</span>
+                  <CountPicker value={rangeCount} onChange={setRangeCount} max={dailyTarget} />
+                </div>
+              )}
               
-              <div className="text-sm">
-                {rangeDates.length > 0 ? (
-                  <span className="text-emerald-600 font-medium">
-                    Will log {rangeDates.length} days of activity
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">Select start and end dates</span>
-                )}
-              </div>
+              {rangeDates.length > 0 ? (
+                <div className="text-sm text-emerald-600 font-medium">
+                  {rangeDates.length} days selected
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  Select start and end dates above
+                </div>
+              )}
 
               <Button
                 onClick={() => handleBulkSave(rangeDates, rangeCount, "Date range")}
                 disabled={isPending || rangeDates.length === 0}
                 className="w-full"
               >
-                {isPending ? "Saving..." : `Apply to ${rangeDates.length} days`}
+                {isPending ? "Saving..." : rangeDates.length > 0 ? `Log ${rangeDates.length} days` : "Log Activity"}
               </Button>
             </div>
           </TabsContent>
 
           {/* Pattern Tab */}
-          <TabsContent value="pattern" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs">From</Label>
-                <Calendar
-                  mode="single"
-                  selected={patternStart}
-                  onSelect={setPatternStart}
-                  disabled={disabledDays}
-                  defaultMonth={subMonths(yesterday, 1)}
-                  className="rounded-md border text-xs"
+          <TabsContent value="pattern" className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Log activity for specific weekdays within a date range.
+            </p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Start Date</Label>
+                <Input
+                  type="date"
+                  value={patternStart ? format(patternStart, "yyyy-MM-dd") : ""}
+                  onChange={(e) => setPatternStart(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
+                  max={format(yesterday, "yyyy-MM-dd")}
+                  className="h-9"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs">To</Label>
-                <Calendar
-                  mode="single"
-                  selected={patternEnd}
-                  onSelect={setPatternEnd}
-                  disabled={disabledDays}
-                  defaultMonth={yesterday}
-                  className="rounded-md border text-xs"
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">End Date</Label>
+                <Input
+                  type="date"
+                  value={patternEnd ? format(patternEnd, "yyyy-MM-dd") : ""}
+                  onChange={(e) => setPatternEnd(e.target.value ? new Date(e.target.value + "T12:00:00") : undefined)}
+                  max={format(yesterday, "yyyy-MM-dd")}
+                  className="h-9"
                 />
               </div>
             </div>
 
-            <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">Days of the week</Label>
-                <div className="flex gap-1 mt-2">
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Which days?</Label>
+                <div className="flex gap-1">
                   {WEEKDAYS.map((day) => (
                     <Button
                       key={day.value}
                       variant={selectedWeekdays.includes(day.value) ? "default" : "outline"}
                       size="sm"
-                      className="flex-1 px-1 text-xs"
+                      className={cn(
+                        "flex-1 h-8 px-0 text-xs",
+                        selectedWeekdays.includes(day.value) && "bg-primary"
+                      )}
                       onClick={() => toggleWeekday(day.value)}
                     >
                       {day.label}
@@ -420,70 +425,77 @@ export function ActivityLogDialog({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Completions per day</span>
-                <CountPicker value={patternCount} onChange={setPatternCount} max={dailyTarget} />
-              </div>
+              {isMultiTarget && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Completions per day</span>
+                  <CountPicker value={patternCount} onChange={setPatternCount} max={dailyTarget} />
+                </div>
+              )}
 
-              <div className="text-sm">
-                {patternDates.length > 0 ? (
-                  <span className="text-emerald-600 font-medium">
-                    Will log {patternDates.length} matching days
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">Select dates and weekdays</span>
-                )}
-              </div>
+              {patternDates.length > 0 ? (
+                <div className="text-sm text-emerald-600 font-medium">
+                  {patternDates.length} days match your pattern
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  Select date range and weekdays
+                </div>
+              )}
 
               <Button
                 onClick={() => handleBulkSave(patternDates, patternCount, "Weekday pattern")}
                 disabled={isPending || patternDates.length === 0}
                 className="w-full"
               >
-                {isPending ? "Saving..." : `Apply to ${patternDates.length} days`}
+                {isPending ? "Saving..." : patternDates.length > 0 ? `Log ${patternDates.length} days` : "Log Activity"}
               </Button>
             </div>
           </TabsContent>
 
           {/* Streak Tab */}
-          <TabsContent value="streak" className="space-y-4">
-            <div className="rounded-lg border bg-muted/50 p-4 space-y-4">
-              <div className="text-sm font-medium">
-                I completed this goal every day for the last...
-              </div>
+          <TabsContent value="streak" className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Quickly log a consecutive streak ending yesterday.
+            </p>
 
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min={1}
-                  max={365}
-                  value={streakLength}
-                  onChange={(e) => setStreakLength(Math.max(1, Math.min(365, parseInt(e.target.value) || 1)))}
-                  className="w-20"
-                />
-                <Select value={streakUnit} onValueChange={(v) => setStreakUnit(v as typeof streakUnit)}>
-                  <SelectTrigger className="w-28">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="days">days</SelectItem>
-                    <SelectItem value="weeks">weeks</SelectItem>
-                    <SelectItem value="months">months</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Completions per day</span>
-                <CountPicker value={streakCount} onChange={setStreakCount} max={dailyTarget} />
-              </div>
-
-              <div className="text-sm space-y-1">
-                <div className="text-emerald-600 font-medium">
-                  Will log {streakDates.length} consecutive days
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">I did this every day for...</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={streakLength}
+                    onChange={(e) => setStreakLength(Math.max(1, Math.min(365, parseInt(e.target.value) || 1)))}
+                    className="w-20 h-9"
+                  />
+                  <Select value={streakUnit} onValueChange={(v) => setStreakUnit(v as typeof streakUnit)}>
+                    <SelectTrigger className="w-24 h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="days">days</SelectItem>
+                      <SelectItem value="weeks">weeks</SelectItem>
+                      <SelectItem value="months">months</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="text-muted-foreground text-xs">
-                  From {streakDates[0]} to {streakDates[streakDates.length - 1]}
+              </div>
+
+              {isMultiTarget && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Completions per day</span>
+                  <CountPicker value={streakCount} onChange={setStreakCount} max={dailyTarget} />
+                </div>
+              )}
+
+              <div className="rounded-md bg-background/50 p-3 space-y-1">
+                <div className="text-sm font-medium text-emerald-600">
+                  {streakDates.length} consecutive days
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {streakDates.length > 0 && `${streakDates[0]} → ${streakDates[streakDates.length - 1]}`}
                 </div>
               </div>
 
