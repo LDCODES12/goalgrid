@@ -17,9 +17,6 @@ export const metadata: Metadata = {
   title: "GoalGrid — Science-based accountability",
   description:
     "GoalGrid is a science-based, gamified accountability app for goals and habits with friends.",
-  icons: {
-    icon: "/favicon.svg",
-  },
 }
 
 export default function RootLayout({

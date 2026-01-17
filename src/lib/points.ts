@@ -157,9 +157,13 @@ export function isGoalActiveForWeek(
   weekEndDate: Date,
   hasCheckInThisWeek: boolean
 ): boolean {
+  // If there are check-ins for this goal this week, include it
+  // This allows historical check-ins (logged for dates before goal was created) to earn points
+  if (hasCheckInThisWeek) return true
+  
+  // Otherwise, only include if goal is currently active and existed during this week
   if (!goal.active) return false
-  const createdBeforeWeekEnd = goal.createdAt <= weekEndDate
-  return createdBeforeWeekEnd || hasCheckInThisWeek
+  return goal.createdAt <= weekEndDate
 }
 
 /**
