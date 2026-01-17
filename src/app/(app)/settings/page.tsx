@@ -60,6 +60,35 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>How Points Work</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            Points reward consistency, not gaming. Each week, you can earn up to <span className="font-medium text-foreground">1,000 points</span> across all your goals.
+          </p>
+          <div className="space-y-1.5">
+            <div className="flex items-start gap-2">
+              <span className="text-foreground">•</span>
+              <span><span className="font-medium text-foreground">Fair sharing:</span> Points are divided among your active goals based on effort—a goal done 3x/day earns more share than 1x/day.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-foreground">•</span>
+              <span><span className="font-medium text-foreground">Finish-weighted:</span> Completing a goal fully earns more than getting halfway. Consistency compounds.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-foreground">•</span>
+              <span><span className="font-medium text-foreground">Streak bonus:</span> Maintaining a streak for weeks adds up to 10% bonus points.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-foreground">•</span>
+              <span><span className="font-medium text-foreground">No farming:</span> The weekly ceiling prevents point inflation—focus on doing well, not doing more.</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Data export</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
