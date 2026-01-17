@@ -5,7 +5,7 @@ import { getServerSession } from "next-auth"
 import { addDays } from "date-fns"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
-import { getLocalDateKey, getWeekKey, getWeekStart, getWeekEnd } from "@/lib/time"
+import { getWeekKey } from "@/lib/time"
 import {
   GoalForPoints,
   WEEKLY_POINTS_CEILING,

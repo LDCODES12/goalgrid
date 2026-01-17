@@ -9,7 +9,6 @@ import { subDays } from "date-fns"
 import {
   computeDailyStreak,
   computeBestDailyStreak,
-  computeWeeklyPoints,
   computeWeeklyStreak,
   computeConsistencyPercentage,
   computeGracefulStreak,

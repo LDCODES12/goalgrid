@@ -7,7 +7,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { checkInSchema } from "@/lib/validators"
 import { getLocalDateKey, getWeekKey, getWeekStart, getWeekEnd } from "@/lib/time"
-import { computeDailyStreak, summarizeDailyCheckIns, computeGracefulStreak } from "@/lib/scoring"
+import { summarizeDailyCheckIns, computeGracefulStreak } from "@/lib/scoring"
 import {
   GoalForPoints,
   computeDailyGoalProgress,
