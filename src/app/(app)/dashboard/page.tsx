@@ -29,6 +29,7 @@ import { TinyHeatmap } from "@/components/tiny-heatmap"
 import { Sparkline } from "@/components/sparkline"
 import { DismissRemindersButton } from "@/components/dismiss-reminders-button"
 import { DraggableDashboardGoals } from "@/components/draggable-dashboard-goals"
+import { PointsBackfill } from "@/components/points-backfill"
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -75,6 +76,11 @@ export default async function DashboardPage() {
     orderBy: { createdAt: "desc" },
     take: 5,
   })
+
+  // Check if user needs points backfill (has check-ins but no ledger entries)
+  const userCheckInCount = await prisma.checkIn.count({ where: { userId: user.id } })
+  const userLedgerCount = await prisma.pointLedger.count({ where: { userId: user.id } })
+  const needsBackfill = userCheckInCount > 0 && userLedgerCount === 0
 
   const todayKey = getLocalDateKey(new Date(), user.timezone)
   const now = new Date()
@@ -232,6 +238,11 @@ export default async function DashboardPage() {
 
   return (
     <div id="dashboard" className="space-y-6">
+      {/* Auto-backfill points for existing users */}
+      {needsBackfill && (
+        <PointsBackfill hasCheckIns={userCheckInCount > 0} hasLedgerEntries={userLedgerCount > 0} />
+      )}
+      
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
