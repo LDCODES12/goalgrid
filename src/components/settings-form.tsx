@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { updateReminderAction, updateTimezoneAction, updateNicknameAction } from "@/app/actions/settings"
 import { leaveGroupAction } from "@/app/actions/groups"
+import { backfillUserPointsAction } from "@/app/actions/points"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -100,6 +101,18 @@ export function SettingsForm({
         return
       }
       toast.success("You left the group.")
+      router.refresh()
+    })
+  }
+
+  const handleRecalculatePoints = () => {
+    startTransition(async () => {
+      const result = await backfillUserPointsAction()
+      if (!result.ok) {
+        toast.error(result.error ?? "Could not recalculate points.")
+        return
+      }
+      toast.success(result.message ?? "Points recalculated!")
       router.refresh()
     })
   }
@@ -262,6 +275,24 @@ export function SettingsForm({
             <span>Push notifications (coming soon)</span>
             <Switch disabled />
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Points</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            If your points seem incorrect (e.g., after logging historical activity), 
+            you can recalculate them from your check-in history.
+          </p>
+          <Button
+            variant="outline"
+            onClick={handleRecalculatePoints}
+            disabled={isPending}
+          >
+            {isPending ? "Recalculating..." : "Recalculate points"}
+          </Button>
         </CardContent>
       </Card>
       <Card>
