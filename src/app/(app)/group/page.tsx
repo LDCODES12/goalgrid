@@ -280,13 +280,16 @@ export default async function GroupPage() {
             {/* Member rows */}
             <div className="divide-y">
               {todaySnapshots.map((entry) => {
-                const dailyGoals = entry.goals.filter(
-                  (g) => g.goal.cadenceType === "DAILY"
-                )
-                const weeklyGoals = entry.goals.filter(
-                  (g) => g.goal.cadenceType === "WEEKLY"
-                )
-                const completedCount = entry.goals.filter((g) => g.checkedToday).length
+                // Calculate total weekly progress across all goals
+                let totalWeeklyTarget = 0
+                let totalWeeklyDone = 0
+                for (const g of entry.goals) {
+                  const dailyTarget = g.goal.dailyTarget ?? 1
+                  const isWeekly = g.goal.cadenceType === "WEEKLY"
+                  const target = isWeekly ? (g.goal.weeklyTarget ?? 1) : (dailyTarget * 7)
+                  totalWeeklyTarget += target
+                  totalWeeklyDone += Math.min(g.weekCount, target)
+                }
 
                 return (
                   <div key={entry.member.id} className="px-3 py-2">
@@ -295,7 +298,7 @@ export default async function GroupPage() {
                       <span className="text-sm font-medium">{entry.member.user.name}</span>
                       {entry.goals.length > 0 && (
                         <span className="text-[11px] text-muted-foreground tabular-nums">
-                          {completedCount}/{entry.goals.length}
+                          {totalWeeklyDone}/{totalWeeklyTarget}
                         </span>
                       )}
                     </div>
@@ -304,47 +307,24 @@ export default async function GroupPage() {
                       <span className="text-xs text-muted-foreground">No goals</span>
                     ) : (
                       <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                        {/* Daily goals - inline with icon */}
-                        {dailyGoals.map((g) => {
+                        {/* All goals - with progress bars */}
+                        {entry.goals.map((g) => {
+                          const dailyTarget = g.goal.dailyTarget ?? 1
+                          const isWeekly = g.goal.cadenceType === "WEEKLY"
+                          const target = isWeekly ? (g.goal.weeklyTarget ?? 1) : (dailyTarget * 7)
+                          const progress = Math.min(100, Math.round((g.weekCount / target) * 100))
+                          const isComplete = g.weekCount >= target
                           const isPending = !g.checkedToday
                           const showRemind = isPending && entry.member.user.id !== session.user.id
-                          
+
                           return (
                             <div key={g.goal.id} className="flex flex-col">
-                              <div className="flex items-center gap-1 text-xs">
+                              <div className="flex items-center gap-1.5 text-xs">
                                 <span
                                   className={`h-1.5 w-1.5 rounded-full ${
                                     g.checkedToday ? "bg-emerald-500" : "bg-amber-500"
                                   }`}
                                 />
-                                <span className={g.checkedToday ? "text-muted-foreground" : ""}>
-                                  {g.goal.name}
-                                </span>
-                              </div>
-                              {showRemind && (
-                                <InlineRemind
-                                  recipientId={entry.member.user.id}
-                                  recipientName={entry.member.user.name}
-                                  goalName={g.goal.name}
-                                />
-                              )}
-                            </div>
-                          )
-                        })}
-
-                        {/* Weekly goals - inline with progress */}
-                        {weeklyGoals.map((g) => {
-                          const target = g.goal.weeklyTarget ?? 1
-                          const progress = Math.min(100, Math.round((g.weekCount / target) * 100))
-                          const isComplete = g.weekCount >= target
-                          const showRemind = !isComplete && entry.member.user.id !== session.user.id
-
-                          return (
-                            <div key={g.goal.id} className="flex flex-col">
-                              <div className="flex items-center gap-1.5 text-xs">
-                                {isComplete && (
-                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                )}
                                 <span className={isComplete ? "text-muted-foreground" : ""}>
                                   {g.goal.name}
                                 </span>
