@@ -83,13 +83,15 @@ export async function backfillUserPointsAction() {
     const year = parseInt(yearStr)
     const weekNum = parseInt(weekNumStr)
     
-    // Calculate week start date (Monday of that week)
-    const jan1 = new Date(year, 0, 1)
-    const jan1Day = jan1.getDay() || 7 // Convert Sunday (0) to 7
-    const daysToFirstMonday = jan1Day <= 1 ? 1 - jan1Day : 8 - jan1Day
-    const firstMonday = new Date(year, 0, 1 + daysToFirstMonday)
-    const weekStart = new Date(firstMonday)
-    weekStart.setDate(firstMonday.getDate() + (weekNum - 1) * 7)
+    // Calculate week start using ISO week rules
+    // ISO week 1 contains January 4, weeks start on Monday
+    const jan4 = new Date(year, 0, 4)
+    const jan4Day = jan4.getDay() || 7 // Monday=1, Sunday=7
+    // Monday of week 1 = Jan 4 minus (jan4Day - 1) days
+    const week1Monday = new Date(jan4)
+    week1Monday.setDate(jan4.getDate() - (jan4Day - 1))
+    // Week N starts (weekNum - 1) * 7 days after week 1 Monday
+    const weekStart = addDays(week1Monday, (weekNum - 1) * 7)
     const weekEnd = addDays(weekStart, 6)
 
     // Generate week dates
