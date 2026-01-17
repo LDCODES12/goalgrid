@@ -21,6 +21,7 @@ import {
  * Undo the most recent check-in for a goal today
  * For single-target goals: removes the check-in
  * For multi-target goals: removes the most recent one (decrements count)
+ * Also reverses any points awarded for that check-in
  */
 export async function undoCheckInAction(goalId: string) {
   const session = await getServerSession(authOptions)
@@ -40,6 +41,7 @@ export async function undoCheckInAction(goalId: string) {
   if (!goal) return { ok: false, error: "Goal not found or not yours." }
 
   const localDateKey = getLocalDateKey(new Date(), user.timezone)
+  const weekKey = getWeekKey(new Date(), user.timezone)
 
   // Find today's check-ins, ordered by most recent first
   const todayCheckIns = await prisma.checkIn.findMany({
@@ -55,9 +57,45 @@ export async function undoCheckInAction(goalId: string) {
     return { ok: false, error: "No check-ins to undo today." }
   }
 
-  // Delete the most recent check-in
-  await prisma.checkIn.delete({
-    where: { id: todayCheckIns[0].id },
+  const checkInToDelete = todayCheckIns[0]
+
+  // Transaction: delete check-in and reverse points
+  await prisma.$transaction(async (tx) => {
+    // Find and delete the ledger entry for this check-in
+    const ledgerEntry = await tx.pointLedger.findFirst({
+      where: {
+        userId: session.user.id,
+        sourceId: checkInToDelete.id,
+        reason: "CHECKIN_POINTS",
+      },
+    })
+
+    if (ledgerEntry) {
+      // Delete the ledger entry
+      await tx.pointLedger.delete({
+        where: { id: ledgerEntry.id },
+      })
+
+      // Decrement user's points (ensure non-negative)
+      const isCurrentWeek = user.pointsWeekKey === weekKey
+      const newLifetime = Math.max(0, user.pointsLifetimeMilli - ledgerEntry.pointsMilli)
+      const newWeek = isCurrentWeek 
+        ? Math.max(0, user.pointsWeekMilli - ledgerEntry.pointsMilli)
+        : user.pointsWeekMilli
+
+      await tx.user.update({
+        where: { id: session.user.id },
+        data: {
+          pointsLifetimeMilli: newLifetime,
+          pointsWeekMilli: newWeek,
+        },
+      })
+    }
+
+    // Delete the check-in
+    await tx.checkIn.delete({
+      where: { id: checkInToDelete.id },
+    })
   })
 
   revalidatePath("/dashboard")
@@ -458,6 +496,7 @@ export async function getHistoricalCheckInsAction({
 
 /**
  * Delete a specific historical check-in
+ * Also removes any associated points ledger entry
  */
 export async function deleteHistoricalCheckInAction({
   checkInId,
@@ -466,6 +505,11 @@ export async function deleteHistoricalCheckInAction({
 }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return { ok: false, error: "Unauthorized" }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+  })
+  if (!user) return { ok: false, error: "User not found." }
 
   const checkIn = await prisma.checkIn.findUnique({
     where: { id: checkInId },
@@ -480,8 +524,41 @@ export async function deleteHistoricalCheckInAction({
     return { ok: false, error: "Not authorized to delete this check-in." }
   }
 
-  await prisma.checkIn.delete({
-    where: { id: checkInId },
+  // Transaction: delete check-in and any associated points
+  await prisma.$transaction(async (tx) => {
+    // Find and delete any ledger entry for this check-in
+    const ledgerEntry = await tx.pointLedger.findFirst({
+      where: {
+        userId: session.user.id,
+        sourceId: checkInId,
+        reason: "CHECKIN_POINTS",
+      },
+    })
+
+    if (ledgerEntry) {
+      await tx.pointLedger.delete({
+        where: { id: ledgerEntry.id },
+      })
+
+      // Decrement user's points (ensure non-negative)
+      const newLifetime = Math.max(0, user.pointsLifetimeMilli - ledgerEntry.pointsMilli)
+      const newWeek = user.pointsWeekKey === checkIn.weekKey
+        ? Math.max(0, user.pointsWeekMilli - ledgerEntry.pointsMilli)
+        : user.pointsWeekMilli
+
+      await tx.user.update({
+        where: { id: session.user.id },
+        data: {
+          pointsLifetimeMilli: newLifetime,
+          pointsWeekMilli: newWeek,
+        },
+      })
+    }
+
+    // Delete the check-in
+    await tx.checkIn.delete({
+      where: { id: checkInId },
+    })
   })
 
   revalidatePath("/dashboard")
