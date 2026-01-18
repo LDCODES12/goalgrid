@@ -249,9 +249,9 @@ export function DraggableDashboardGoals({ goals }: DraggableDashboardGoalsProps)
       <div className="rounded-xl border-2 border-dashed bg-muted/30 p-6 text-center">
         <p className="text-sm text-muted-foreground">
           No goals yet.{" "}
-          <a href="/goals" className="text-primary font-medium hover:underline">
+          <Link href="/goals" className="text-primary font-medium hover:underline">
             Create your first goal
-          </a>{" "}
+          </Link>{" "}
           to start tracking.
         </p>
       </div>

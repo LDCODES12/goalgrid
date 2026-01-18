@@ -182,7 +182,7 @@ export function calculatePointsToAward(
   // 3. Apply streak multiplier
   const mult = streakMultiplier(streakDays)
   const streakBonusApplied = mult > 1
-  let pointsToAward = basePoints * mult
+  const pointsToAward = basePoints * mult
   
   // 4. Clamp to remaining weekly ceiling
   const remainingMilli = WEEKLY_POINTS_CEILING * 1000 - pointsAlreadyEarnedMilli

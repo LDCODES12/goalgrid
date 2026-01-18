@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { backfillUserPointsAction } from "@/app/actions/points"
@@ -15,14 +15,14 @@ interface PointsBackfillProps {
  * who have check-ins but haven't been credited points yet.
  */
 export function PointsBackfill({ hasCheckIns, hasLedgerEntries }: PointsBackfillProps) {
-  const [hasRun, setHasRun] = useState(false)
+  const hasRunRef = useRef(false)
   const router = useRouter()
 
   useEffect(() => {
     // Only run once, and only if user has check-ins but no ledger entries
-    if (hasRun || !hasCheckIns || hasLedgerEntries) return
+    if (hasRunRef.current || !hasCheckIns || hasLedgerEntries) return
 
-    setHasRun(true)
+    hasRunRef.current = true
 
     // Run backfill in background
     backfillUserPointsAction().then((result) => {
@@ -33,7 +33,7 @@ export function PointsBackfill({ hasCheckIns, hasLedgerEntries }: PointsBackfill
     }).catch(() => {
       // Silently fail - not critical
     })
-  }, [hasCheckIns, hasLedgerEntries, hasRun, router])
+  }, [hasCheckIns, hasLedgerEntries, router])
 
   // Invisible component
   return null
