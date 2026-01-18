@@ -328,20 +328,18 @@ export function UnifiedHeatmap({
         </div>
       </div>
 
-      {/* Legend */}
+      {/* Legend - show empty vs activity, and note about colors */}
       <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-        <span>Less</span>
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1.5">
           <div className="rounded-[2px] bg-muted/30" style={{ width: 10, height: 10 }} />
-          <div className="rounded-[2px] bg-emerald-500/40" style={{ width: 10, height: 10 }} />
-          <div className="rounded-[2px] bg-emerald-500/70" style={{ width: 10, height: 10 }} />
-          <div className="rounded-[2px] bg-emerald-500" style={{ width: 10, height: 10 }} />
+          <span>No activity</span>
         </div>
-        <span>More</span>
+        <span>•</span>
+        <span>Colors match goals above</span>
         {goals.length > 1 && (
           <>
-            <span className="ml-2">•</span>
-            <span>Multi-goal days show blended colors</span>
+            <span>•</span>
+            <span>Blended = multiple goals</span>
           </>
         )}
       </div>
