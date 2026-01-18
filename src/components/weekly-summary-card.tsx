@@ -86,41 +86,43 @@ export function WeeklySummaryCard({ data }: { data: WeeklySummaryData }) {
 
         {/* Member Breakdown */}
         <div className="space-y-2">
-          <div className="text-xs uppercase text-muted-foreground">This Week</div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="uppercase">Member Activity</span>
+            <span>Check-ins this week</span>
+          </div>
           <div className="divide-y rounded-lg border">
-            {data.memberSummaries.map((member) => (
-              <div
-                key={member.memberId}
-                className="flex items-center justify-between px-3 py-2"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{member.memberName}</span>
-                  {member.weekOverWeekChange > 0 && (
-                    <span className="flex items-center text-xs text-emerald-500">
-                      <Zap className="h-3 w-3 mr-0.5" />
-                      +{member.weekOverWeekChange}%
-                    </span>
-                  )}
-                  {member.weekOverWeekChange < 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      {member.weekOverWeekChange}%
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm tabular-nums text-muted-foreground">
-                    {member.totalCompletionsThisWeek}
-                  </span>
-                  <Progress
-                    value={Math.min(
-                      100,
-                      (member.totalCompletionsThisWeek / Math.max(1, data.groupAverage * 2)) * 100
-                    )}
-                    className="h-1.5 w-16"
-                  />
-                </div>
-              </div>
-            ))}
+            {data.memberSummaries
+              .sort((a, b) => b.totalCompletionsThisWeek - a.totalCompletionsThisWeek)
+              .map((member) => {
+                const maxCompletions = Math.max(...data.memberSummaries.map(m => m.totalCompletionsThisWeek), 1)
+                const barPercent = (member.totalCompletionsThisWeek / maxCompletions) * 100
+                
+                return (
+                  <div
+                    key={member.memberId}
+                    className="flex items-center justify-between px-3 py-2.5"
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="text-sm font-medium truncate">{member.memberName}</span>
+                      {member.weekOverWeekChange > 0 && member.totalCompletionsLastWeek > 0 && (
+                        <span className="flex items-center text-[10px] text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                          <TrendingUp className="h-2.5 w-2.5 mr-0.5" />
+                          {member.weekOverWeekChange}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <Progress
+                        value={barPercent}
+                        className="h-2 w-20"
+                      />
+                      <span className="text-sm font-medium tabular-nums w-6 text-right">
+                        {member.totalCompletionsThisWeek}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
           </div>
         </div>
       </CardContent>
