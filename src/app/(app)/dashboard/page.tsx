@@ -191,16 +191,27 @@ export default async function DashboardPage() {
   })
   const lastWeekScore = Math.floor((lastWeekLedger._sum.pointsMilli ?? 0) / 1000)
 
+  // Best current streak (for display)
   const maxDailyStreak = Math.max(
     0,
     ...todayGoals
       .filter((item) => item.goal.cadenceType === "DAILY")
-      .map((item) => item.dailyStreak)
+      .map((item) => item.gracefulStreak.currentStreak)
   )
-  const streakProgress = Math.min(
-    100,
-    Math.round((maxDailyStreak / 7) * 100)
-  )
+
+  // Calculate weekly completion rate across all goals
+  let weeklyTotalTarget = 0
+  let weeklyTotalCompleted = 0
+  for (const item of todayGoals) {
+    const isWeekly = item.goal.cadenceType === "WEEKLY" && item.goal.weeklyTarget != null
+    const target = isWeekly ? (item.goal.weeklyTarget ?? 1) : (item.dailyTarget * 7)
+    const completed = Math.min(item.checkInsThisWeek.length, target)
+    weeklyTotalTarget += target
+    weeklyTotalCompleted += completed
+  }
+  const weeklyCompletionRate = weeklyTotalTarget > 0 
+    ? Math.round((weeklyTotalCompleted / weeklyTotalTarget) * 100)
+    : 0
   const pendingGoal = todayGoals.find((item) => !item.todayDone)
 
   const hourCounts = todayGoals
@@ -401,7 +412,7 @@ export default async function DashboardPage() {
           </div>
           
           <div className="flex items-center justify-center">
-            <CompletionRing value={streakProgress} label="Streak progress" />
+            <CompletionRing value={weeklyCompletionRate} label="Weekly completion" />
           </div>
         </div>
       </div>
