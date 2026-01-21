@@ -7,6 +7,15 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { getWeekKey } from "@/lib/time"
 
+type ChallengeMode = "STANDARD" | "TEAM_VS_TEAM" | "DUO_COMPETITION"
+
+interface CreateChallengeOptions {
+  groupId: string
+  mode?: ChallengeMode
+  durationDays?: number
+  threshold?: number
+}
+
 /**
  * Get the week key for the next ISO week (starts Monday)
  */
@@ -15,6 +24,50 @@ function getNextWeekKey(timezone: string): string {
   const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 }) // Monday
   const nextWeekStart = addDays(currentWeekStart, 7)
   return getWeekKey(nextWeekStart, timezone)
+}
+
+/**
+ * Shuffle array using Fisher-Yates algorithm for fair team/duo assignment
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
+/**
+ * Assign members to two teams for TEAM_VS_TEAM mode
+ */
+function assignTeams(memberIds: string[]): { team1: string[]; team2: string[] } {
+  const shuffled = shuffleArray(memberIds)
+  const midpoint = Math.ceil(shuffled.length / 2)
+  return {
+    team1: shuffled.slice(0, midpoint),
+    team2: shuffled.slice(midpoint),
+  }
+}
+
+/**
+ * Assign members to duos for DUO_COMPETITION mode
+ * If odd number, one person gets a "solo" status
+ */
+function assignDuos(memberIds: string[]): string[][] {
+  const shuffled = shuffleArray(memberIds)
+  const duos: string[][] = []
+
+  for (let i = 0; i < shuffled.length; i += 2) {
+    if (i + 1 < shuffled.length) {
+      duos.push([shuffled[i], shuffled[i + 1]])
+    } else {
+      // Odd person out - create solo duo
+      duos.push([shuffled[i]])
+    }
+  }
+
+  return duos
 }
 
 /**
@@ -75,6 +128,113 @@ export async function createChallengeAction(groupId: string) {
 
   revalidatePath("/group")
   return { ok: true, challenge }
+}
+
+/**
+ * Create a new challenge with advanced configuration options.
+ * Supports different modes: STANDARD, TEAM_VS_TEAM, DUO_COMPETITION
+ * Only group ADMINs (leaders) can create challenges.
+ */
+export async function createChallengeV2Action(options: CreateChallengeOptions) {
+  const { groupId, mode = "STANDARD", durationDays = 7, threshold = 90 } = options
+
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) return { ok: false, error: "Unauthorized" }
+
+  // Check if user is an ADMIN (group leader)
+  const membership = await prisma.groupMember.findFirst({
+    where: { userId: session.user.id, groupId },
+  })
+  if (!membership) return { ok: false, error: "Not a member of this group" }
+  if (membership.role !== "ADMIN") {
+    return { ok: false, error: "Only group leaders can create challenges" }
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { timezone: true },
+  })
+  const timezone = user?.timezone ?? "America/Chicago"
+
+  const nextWeekKey = getNextWeekKey(timezone)
+
+  // Check if a challenge already exists for next week
+  const existing = await prisma.groupChallenge.findUnique({
+    where: { groupId_weekKey: { groupId, weekKey: nextWeekKey } },
+  })
+  if (existing) {
+    return { ok: false, error: "A challenge already exists for next week" }
+  }
+
+  // Get all group members for team/duo assignment
+  const members = await prisma.groupMember.findMany({
+    where: { groupId },
+    select: { userId: true },
+  })
+
+  if (members.length < 2) {
+    return { ok: false, error: "Need at least 2 members for a challenge" }
+  }
+
+  const memberIds = members.map((m) => m.userId)
+
+  // Calculate start and end dates
+  const now = new Date()
+  const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const nextWeekStart = addDays(currentWeekStart, 7)
+  const challengeEnd = addDays(nextWeekStart, durationDays)
+
+  // Assign teams/duos based on mode
+  let teamAssignments = null
+  let duoAssignments = null
+
+  if (mode === "TEAM_VS_TEAM") {
+    teamAssignments = assignTeams(memberIds)
+  } else if (mode === "DUO_COMPETITION") {
+    duoAssignments = assignDuos(memberIds)
+  }
+
+  // Create the challenge with advanced configuration
+  const challenge = await prisma.groupChallenge.create({
+    data: {
+      groupId,
+      weekKey: nextWeekKey,
+      createdById: session.user.id,
+      status: "PENDING",
+      threshold,
+      mode,
+      durationDays,
+      startDate: nextWeekStart,
+      endDate: challengeEnd,
+      teamAssignments: teamAssignments ? (teamAssignments as any) : undefined,
+      duoAssignments: duoAssignments ? (duoAssignments as any) : undefined,
+      approvals: {
+        create: {
+          userId: session.user.id,
+        },
+      },
+    },
+    include: { approvals: true },
+  })
+
+  // Check if all members have now approved (unlikely for just creator)
+  const memberCount = members.length
+  if (challenge.approvals.length >= memberCount) {
+    await prisma.groupChallenge.update({
+      where: { id: challenge.id },
+      data: { status: "SCHEDULED" },
+    })
+  }
+
+  revalidatePath("/group")
+  return {
+    ok: true,
+    challenge: {
+      ...challenge,
+      teamAssignments,
+      duoAssignments,
+    },
+  }
 }
 
 /**

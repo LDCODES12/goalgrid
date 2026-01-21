@@ -30,6 +30,12 @@ enum ChallengeStatus {
   FAILED      // At least one member missed threshold
 }
 
+enum ChallengeMode {
+  STANDARD         // Regular group challenge - everyone competes individually
+  TEAM_VS_TEAM     // Group split into two teams
+  DUO_COMPETITION  // Members compete as pairs/duos
+}
+
 model User {
   id           String        @id @default(cuid())
   name         String
@@ -66,6 +72,11 @@ model Group {
   inviteCode String        @unique
   rank       Int           @default(1)  // Group rank: 1=Bronze, 2=Silver, 3=Gold, 4=Platinum, 5+=Diamond
   createdAt  DateTime      @default(now())
+
+  // Persistent tier system (always active, independent of challenges)
+  currentTier          String   @default("BRONZE")  // BRONZE, SILVER, GOLD, PLATINUM, DIAMOND_I, DIAMOND_II, etc.
+  weeklyCompletionRate Float    @default(0)         // 0-100, calculated weekly
+  lastTierUpdate       DateTime?                    // When tier was last recalculated
 
   members    GroupMember[]
   goals      Goal[]
@@ -223,21 +234,34 @@ model PointLedger {
 }
 
 // Group Challenge System
-// Challenges are weekly competitions where if all members hit 90%+ completion, the group ranks up
+// Challenges are competitions where members compete individually, in teams, or as duos
 model GroupChallenge {
   id           String          @id @default(cuid())
   groupId      String
-  weekKey      String          // The week the challenge runs (e.g., "2026-W04")
+  weekKey      String          // The week the challenge runs (e.g., "2026-W04") - for backwards compatibility
   status       ChallengeStatus @default(PENDING)
   threshold    Int             @default(90)   // Required completion percentage (default 90%)
   createdById  String
   createdAt    DateTime        @default(now())
+
+  // Challenge configuration
+  mode           ChallengeMode @default(STANDARD)
+  durationDays   Int           @default(7)      // Challenge duration in days
+  startDate      DateTime                        // When challenge starts
+  endDate        DateTime                        // When challenge ends
+
+  // Team/Duo assignments (stored as JSON)
+  // For TEAM_VS_TEAM: { "team1": ["userId1", "userId2"], "team2": ["userId3", "userId4"] }
+  // For DUO_COMPETITION: [["userId1", "userId2"], ["userId3", "userId4"]]
+  teamAssignments Json?
+  duoAssignments  Json?
 
   group     Group               @relation(fields: [groupId], references: [id], onDelete: Cascade)
   approvals ChallengeApproval[]
 
   @@unique([groupId, weekKey])  // One challenge per group per week
   @@index([groupId, status])
+  @@index([groupId, startDate])
 }
 
 // Tracks which members have approved/joined a challenge
