@@ -295,11 +295,11 @@ export default async function DashboardPage() {
       )}
       
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Keep your goals on track with one‑tap completions.
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Keep your goals on track with one-tap completions.
           </p>
         </div>
         <FocusModeToggle targetId="dashboard" />
@@ -378,7 +378,8 @@ export default async function DashboardPage() {
       )}
 
       {/* Hero Stats Card */}
-      <div className="rounded-2xl border bg-gradient-to-br from-card to-card/50 p-6 shadow-sm" data-focus-hide="true">
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-card to-card/50 p-6 shadow-sm hover:shadow-md transition-shadow duration-300" data-focus-hide="true">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent pointer-events-none" />
         <div className="grid gap-6 md:grid-cols-[1.5fr_1fr] md:items-center">
           <div className="space-y-4">
             <div className="flex items-baseline gap-4">
@@ -419,8 +420,8 @@ export default async function DashboardPage() {
 
       {/* Activity Heatmap */}
       {goals.length > 0 && (
-        <div className="rounded-2xl border bg-card p-6 shadow-sm" data-focus-hide="true">
-          <h2 className="text-lg font-semibold mb-4">Activity</h2>
+        <div className="rounded-2xl border bg-card p-6 shadow-sm hover:shadow-md transition-shadow duration-300" data-focus-hide="true">
+          <h2 className="text-xl font-semibold mb-4">Activity</h2>
           <UnifiedHeatmap 
             data={heatmapDays}
             goals={heatmapGoals}
@@ -431,7 +432,7 @@ export default async function DashboardPage() {
 
       <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div id="today" className="space-y-4">
-          <h2 className="text-lg font-semibold">Today&apos;s Goals</h2>
+          <h2 className="text-xl font-semibold">Today&apos;s Goals</h2>
           
           <DraggableDashboardGoals 
             goals={todayGoals.map(item => ({
@@ -458,7 +459,7 @@ export default async function DashboardPage() {
         
         {/* Progress Sidebar */}
         <div className="space-y-4" data-focus-hide="true">
-          <h2 className="text-lg font-semibold">Progress</h2>
+          <h2 className="text-xl font-semibold">Progress</h2>
           
           {todayGoals.length === 0 ? (
             <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
@@ -469,7 +470,7 @@ export default async function DashboardPage() {
               {todayGoals.map(({ goal, dailyStreak, bestStreak, consistency, gracefulStreak, weeklyStreak, softMessage }) => (
                 <div
                   key={goal.id}
-                  className="rounded-xl border bg-card p-4 space-y-3"
+                  className="rounded-xl border bg-card p-4 space-y-3 hover:border-emerald-500/30 hover:shadow-sm transition-all duration-200"
                 >
                   <div className="flex items-center justify-between">
                     <Link href={`/goals/${goal.id}`} className="text-sm font-medium hover:underline">
@@ -510,7 +511,7 @@ export default async function DashboardPage() {
 
       {/* Weekly Planning */}
       <div className="space-y-4" data-focus-hide="true">
-        <h2 className="text-lg font-semibold">Weekly Planning</h2>
+        <h2 className="text-xl font-semibold">Weekly Planning</h2>
         
         {todayGoals.length === 0 ? (
           <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
@@ -559,8 +560,8 @@ export default async function DashboardPage() {
               return (
                 <div
                   key={goal.id}
-                  className={`rounded-xl border bg-card p-4 ${
-                    isComplete || isPerfect ? "border-emerald-500/30" : !canStillComplete ? "border-red-500/30" : ""
+                  className={`rounded-xl border bg-card p-4 transition-all duration-200 hover:shadow-sm ${
+                    isComplete || isPerfect ? "border-emerald-500/30 hover:border-emerald-500/40" : !canStillComplete ? "border-red-500/30 hover:border-red-500/40" : "hover:border-primary/30"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -588,7 +589,7 @@ export default async function DashboardPage() {
       {/* Badges */}
       {badges.length > 0 && (
         <div className="space-y-4" data-focus-hide="true">
-          <h2 className="text-lg font-semibold">Badges</h2>
+          <h2 className="text-xl font-semibold">Badges</h2>
           <div className="flex flex-wrap gap-2">
             {badges.map((badge) => (
               <span 
@@ -604,7 +605,7 @@ export default async function DashboardPage() {
 
       {/* Footer Grid */}
       <div className="grid gap-4 md:grid-cols-2" data-focus-hide="true">
-        <div className="rounded-xl border bg-card p-5">
+        <div className="rounded-xl border bg-card p-5 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
           <h3 className="font-semibold mb-3">Reminders</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">

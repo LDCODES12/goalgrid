@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Professional anchor icon for Anchor app -->
+  <rect width="512" height="512" rx="128" fill="#0F172A"/>
+
+  <!-- Anchor symbol -->
+  <g transform="translate(256, 256)">
+    <!-- Top circle (ring) -->
+    <circle cx="0" cy="-110" r="28" fill="none" stroke="#10B981" stroke-width="16"/>
+
+    <!-- Vertical shaft -->
+    <rect x="-8" y="-82" width="16" height="220" rx="8" fill="#10B981"/>
+
+    <!-- Horizontal bar (flukes) -->
+    <g transform="translate(0, 138)">
+      <!-- Left fluke -->
+      <path d="M -90 -40 Q -90 -20, -80 0 L -40 40 Q -30 50, -20 40 L 0 20"
+            fill="none" stroke="#10B981" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Right fluke -->
+      <path d="M 90 -40 Q 90 -20, 80 0 L 40 40 Q 30 50, 20 40 L 0 20"
+            fill="none" stroke="#10B981" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Center stock -->
+      <line x1="-90" y1="-40" x2="90" y2="-40" stroke="#10B981" stroke-width="16" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>
