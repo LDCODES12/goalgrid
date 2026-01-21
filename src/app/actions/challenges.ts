@@ -569,3 +569,38 @@ export async function getChallengeResultsAction(challengeId: string) {
     succeeded: challenge.status === "SUCCEEDED",
   }
 }
+
+/**
+ * Delete/cancel a challenge (admin only, only if pending).
+ * Allows group leaders to undo challenges they just created.
+ */
+export async function deleteChallengeAction(challengeId: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) return { ok: false, error: "Unauthorized" }
+
+  const challenge = await prisma.groupChallenge.findUnique({
+    where: { id: challengeId },
+    include: { group: { include: { members: true } } },
+  })
+  if (!challenge) return { ok: false, error: "Challenge not found" }
+
+  // Check if user is an ADMIN (group leader)
+  const membership = challenge.group.members.find(m => m.userId === session.user.id)
+  if (!membership) return { ok: false, error: "Not a member of this group" }
+  if (membership.role !== "ADMIN") {
+    return { ok: false, error: "Only group leaders can delete challenges" }
+  }
+
+  // Only allow deleting PENDING challenges (before they start)
+  if (challenge.status !== "PENDING") {
+    return { ok: false, error: "Can only delete pending challenges" }
+  }
+
+  // Delete the challenge and all associated approvals
+  await prisma.groupChallenge.delete({
+    where: { id: challengeId },
+  })
+
+  revalidatePath("/group")
+  return { ok: true, message: "Challenge deleted successfully" }
+}

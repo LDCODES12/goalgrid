@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 import {
   approveChallengeAction,
   getGroupChallengeAction,
+  deleteChallengeAction,
 } from "@/app/actions/challenges"
 import { getRankName } from "@/lib/ranks"
 import { toast } from "sonner"
@@ -182,16 +183,45 @@ export function ChallengeCard({ groupId, userRole }: { groupId: string; userRole
               </div>
             </div>
           </div>
-          {challenge.hasApproved ? (
-            <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-              <Check className="h-3.5 w-3.5" />
-              Joined
-            </div>
-          ) : (
-            <Button onClick={handleApprove} disabled={isPending} size="sm" variant="default">
-              Join
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {challenge.hasApproved ? (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                <Check className="h-3.5 w-3.5" />
+                Joined
+              </div>
+            ) : (
+              <Button onClick={handleApprove} disabled={isPending} size="sm" variant="default">
+                Join
+              </Button>
+            )}
+            {userRole === "ADMIN" && (
+              <Button
+                onClick={async () => {
+                  if (confirm("Are you sure you want to delete this challenge?")) {
+                    startTransition(async () => {
+                      const result = await deleteChallengeAction(challenge.id)
+                      if (result.ok) {
+                        toast.success("Challenge deleted")
+                        const newData = await getGroupChallengeAction(groupId)
+                        if (newData.ok) {
+                          setChallenge(newData.challenge ?? null)
+                          setGroupRank(newData.groupRank ?? 1)
+                        }
+                      } else {
+                        toast.error(result.error ?? "Failed to delete challenge")
+                      }
+                    })
+                  }
+                }}
+                disabled={isPending}
+                size="sm"
+                variant="outline"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
         <Progress value={approvalProgress} className="h-1.5" />
       </div>
