@@ -100,6 +100,12 @@ export async function createChallengeAction(groupId: string) {
     return { ok: false, error: "A challenge already exists for next week" }
   }
 
+  // Calculate start and end dates for the challenge
+  const now = new Date()
+  const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const nextWeekStart = addDays(currentWeekStart, 7)
+  const challengeEnd = addDays(nextWeekStart, 7) // Default 7 days duration
+
   // Create the challenge and auto-approve for the creator
   const challenge = await prisma.groupChallenge.create({
     data: {
@@ -108,6 +114,10 @@ export async function createChallengeAction(groupId: string) {
       createdById: session.user.id,
       status: "PENDING",
       threshold: 90,
+      mode: "STANDARD",
+      durationDays: 7,
+      startDate: nextWeekStart,
+      endDate: challengeEnd,
       approvals: {
         create: {
           userId: session.user.id,
