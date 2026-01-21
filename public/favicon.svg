@@ -1,0 +1,21 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simplified anchor for favicon -->
+  <rect width="32" height="32" rx="6" fill="#0F172A"/>
+
+  <g transform="translate(16, 16)">
+    <!-- Top ring -->
+    <circle cx="0" cy="-6.5" r="2" fill="none" stroke="#10B981" stroke-width="1.5"/>
+
+    <!-- Vertical shaft -->
+    <rect x="-0.75" y="-4.5" width="1.5" height="13" rx="0.75" fill="#10B981"/>
+
+    <!-- Flukes -->
+    <g transform="translate(0, 8.5)">
+      <path d="M -5 -2 Q -5 -1, -4.5 0 L -2.5 2 Q -2 2.5, -1.5 2 L 0 1"
+            fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M 5 -2 Q 5 -1, 4.5 0 L 2.5 2 Q 2 2.5, 1.5 2 L 0 1"
+            fill="none" stroke="#10B981" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="-5" y1="-2" x2="5" y2="-2" stroke="#10B981" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>
