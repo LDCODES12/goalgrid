@@ -14,14 +14,14 @@ export function TinyHeatmap({
         const intensity = count / max
         const bg =
           intensity === 0
-            ? "bg-muted"
+            ? "border border-rule"
             : intensity < 0.5
-            ? "bg-primary/40"
-            : "bg-primary"
+            ? "bg-foreground/35"
+            : "bg-foreground"
         return (
           <span
             key={index}
-            className={`h-3 w-3 rounded ${bg}`}
+            className={`h-3 w-3 rounded-[2px] ${bg}`}
             title={`${count} completions`}
           />
         )

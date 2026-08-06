@@ -89,7 +89,7 @@ export default async function AppLayout({
           <div className="flex items-center gap-8">
             <Link
               href="/dashboard"
-              className="font-display text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
+              className="text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
             >
               Anchor
             </Link>

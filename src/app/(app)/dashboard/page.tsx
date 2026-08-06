@@ -20,8 +20,8 @@ import {
 import { getBadges } from "@/lib/badges"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { CompletionRing } from "@/components/completion-ring"
 import { FocusModeToggle } from "@/components/focus-mode-toggle"
+import { WeekLog, type LogCell, type LogDay, type LogRow } from "@/components/week-log"
 import { DismissRemindersButton } from "@/components/dismiss-reminders-button"
 import { DismissCheerButton, DismissAllCheersButton } from "@/components/dismiss-cheers-button"
 import { DraggableDashboardGoals } from "@/components/draggable-dashboard-goals"
@@ -223,6 +223,34 @@ export default async function DashboardPage() {
       .concat(remainingCount > 3 ? `, and ${remainingCount - 3} more` : "")
   }
 
+  // This week as a log sheet: one row per goal, one column per day.
+  const weekDays: LogDay[] = Array.from({ length: 7 }).map((_, index) => {
+    const date = addDays(weekStart, index)
+    const key = getLocalDateKey(date, user.timezone)
+    return {
+      key,
+      label: formatInTimeZone(date, user.timezone, "EEEEE"),
+      isToday: key === todayKey,
+    }
+  })
+  const todayColumn = weekDays.findIndex((day) => day.isToday)
+
+  const logRows: LogRow[] = todayGoals.map((item) => {
+    // Weekly goals have no per-day quota, so any check-in marks the day kept.
+    const perDayTarget = item.goal.cadenceType === "DAILY" ? item.dailyTarget : 0
+    const cells: LogCell[] = weekDays.map((day, index) => {
+      const count = item.checkIns.filter(
+        (check) => check.localDateKey === day.key
+      ).length
+      if (perDayTarget > 0 ? count >= perDayTarget : count > 0) return "done"
+      if (count > 0) return "partial"
+      if (todayColumn >= 0 && index > todayColumn) return "future"
+      if (day.isToday) return "today"
+      return "missed"
+    })
+    return { goalId: item.goal.id, name: item.goal.name, cells }
+  })
+
   const hourCounts = todayGoals
     .flatMap((item) => item.checkIns)
     .reduce((acc, checkIn) => {
@@ -303,78 +331,47 @@ export default async function DashboardPage() {
         <PointsBackfill hasCheckIns={userCheckInCount > 0} hasLedgerEntries={userLedgerCount > 0} />
       )}
       
-      {/* Today — the fact the whole page exists to deliver */}
-      <section
-        className="relative overflow-hidden rounded-3xl border border-border/70 bg-card p-6 sm:p-8"
-        data-focus-hide="true"
-      >
-        <div
-          aria-hidden="true"
-          className={`pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full blur-3xl ${
-            todayGoals.length > 0 && remainingCount === 0 ? "bg-success/10" : "bg-primary/10"
-          }`}
-        />
-        <div className="relative">
-          <div className="flex items-start justify-between gap-4">
-            <p className="section-label">{todayLabel}</p>
-            <FocusModeToggle targetId="dashboard" />
+      {/* This week's log — the record is the interface */}
+      <section className="surface" data-focus-hide="true">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-rule px-5 py-4 sm:px-6 sm:py-5">
+          <div className="min-w-0">
+            <p className="fig text-xs text-muted-foreground">{todayLabel}</p>
+            <h1 className="mt-1.5 text-xl font-semibold tracking-tight sm:text-2xl">
+              {heroHeadline}
+            </h1>
+            <p className="mt-1 max-w-md text-sm text-muted-foreground">
+              {heroDetail}
+            </p>
           </div>
+          <FocusModeToggle targetId="dashboard" />
+        </div>
 
-          <div className="mt-4 grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
-            <div className="min-w-0">
-              <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
-                {heroHeadline}
-              </h1>
-              <p className="mt-3 max-w-md text-sm text-muted-foreground">
-                {heroDetail}
-              </p>
-
-              <dl className="mt-7 flex flex-wrap items-baseline gap-x-8 gap-y-4">
-                <div>
-                  <dt className="text-xs text-muted-foreground">This week</dt>
-                  <dd className="font-display tabular mt-1 text-2xl font-semibold">
-                    {weeklyScore}
-                    <span className="ml-1 text-sm font-normal text-muted-foreground">
-                      pts
-                    </span>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Lifetime</dt>
-                  <dd className="font-display tabular mt-1 text-2xl font-semibold text-muted-foreground">
-                    {lifetimePoints.toLocaleString()}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Best streak</dt>
-                  <dd className="font-display tabular mt-1 text-2xl font-semibold">
-                    {maxDailyStreak}
-                    <span className="ml-1 text-sm font-normal text-muted-foreground">
-                      days
-                    </span>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted-foreground">Trend</dt>
-                  <dd
-                    className={`mt-1 text-sm font-medium ${
-                      trendDelta > 0
-                        ? "text-success"
-                        : trendDelta < 0
-                        ? "text-destructive"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {trendLabel}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <div className="flex justify-start md:justify-end">
-              <CompletionRing value={weeklyCompletionRate} label="Weekly completion" />
-            </div>
+        {logRows.length > 0 && (
+          <div className="px-5 py-3 sm:px-6 sm:py-4">
+            <WeekLog rows={logRows} days={weekDays} />
           </div>
+        )}
+
+        <div className="fig flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-rule px-5 py-3 text-xs text-muted-foreground sm:px-6">
+          <span>
+            <span className="text-foreground">{weeklyScore}</span> pts this week
+          </span>
+          <span>
+            <span className="text-foreground">{lifetimePoints.toLocaleString()}</span> lifetime
+          </span>
+          <span>
+            <span className="text-foreground">{maxDailyStreak}</span> day best
+          </span>
+          <span
+            className={
+              trendDelta > 0 ? "text-success" : trendDelta < 0 ? "text-stamp" : undefined
+            }
+          >
+            {trendLabel}
+          </span>
+          <span className="sm:ml-auto">
+            <span className="text-foreground">{weeklyCompletionRate}%</span> kept
+          </span>
         </div>
       </section>
 
@@ -391,7 +388,7 @@ export default async function DashboardPage() {
       {/* Notifications - Reminders and Cheers */}
       {(reminderItems.length > 0 || recentCheers.length > 0) && (
         <div className="surface-quiet space-y-3 p-4">
-          <div className="section-label">Notifications</div>
+          <div className="ruled">Notifications</div>
 
           {/* Reminders */}
           {reminderItems.length > 0 && (
@@ -446,7 +443,7 @@ export default async function DashboardPage() {
       {/* Activity — ambient context, deliberately quieter than the day's work */}
       {goals.length > 0 && (
         <div className="surface-quiet p-6" data-focus-hide="true">
-          <h2 className="section-label mb-4">Activity</h2>
+          <h2 className="ruled mb-4">Activity</h2>
           <UnifiedHeatmap
             data={heatmapDays}
             goals={heatmapGoals}
@@ -457,7 +454,7 @@ export default async function DashboardPage() {
 
       <section className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div id="today" className="space-y-4">
-          <h2 className="section-label">Today&apos;s goals</h2>
+          <h2 className="ruled">Today&apos;s goals</h2>
 
           <DraggableDashboardGoals 
             goals={todayGoals.map(item => ({
@@ -484,7 +481,7 @@ export default async function DashboardPage() {
         
         {/* Progress Sidebar */}
         <div className="space-y-4" data-focus-hide="true">
-          <h2 className="section-label">Progress</h2>
+          <h2 className="ruled">Progress</h2>
 
           {todayGoals.length === 0 ? (
             <div className="surface-quiet p-4 text-sm text-muted-foreground">
@@ -536,7 +533,7 @@ export default async function DashboardPage() {
 
       {/* Weekly Planning */}
       <div className="space-y-4" data-focus-hide="true">
-        <h2 className="section-label">This week</h2>
+        <h2 className="ruled">This week</h2>
 
         {todayGoals.length === 0 ? (
           <div className="surface-quiet p-4 text-sm text-muted-foreground">
@@ -597,12 +594,12 @@ export default async function DashboardPage() {
                     <Link href={`/goals/${goal.id}`} className="font-medium truncate hover:underline">
                       {goal.name}
                     </Link>
-                    <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${statusStyle}`}>
+                    <span className={`fig shrink-0 rounded-sm px-2 py-0.5 text-xs ${statusStyle}`}>
                       {statusLabel}
                     </span>
                   </div>
                   <div className="mt-3">
-                    <div className="tabular mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="fig mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
                       <span>{done}/{targetThisWeek} this week</span>
                       <span>{remainingRequired > 0 ? `${remainingRequired} left` : "Done"}</span>
                     </div>
@@ -618,7 +615,7 @@ export default async function DashboardPage() {
       {/* Badges */}
       {badges.length > 0 && (
         <div className="space-y-4" data-focus-hide="true">
-          <h2 className="section-label">Badges</h2>
+          <h2 className="ruled">Badges</h2>
           <div className="flex flex-wrap gap-2">
             {badges.map((badge) => (
               <span
@@ -634,11 +631,11 @@ export default async function DashboardPage() {
 
       {/* Reminder settings at a glance */}
       <div className="space-y-4" data-focus-hide="true">
-        <h2 className="section-label">Reminders</h2>
+        <h2 className="ruled">Reminders</h2>
         <div className="surface-quiet grid gap-x-8 gap-y-3 p-5 sm:grid-cols-3">
           <div className="flex items-baseline justify-between gap-3 sm:block">
             <span className="text-xs text-muted-foreground">Next reminder</span>
-            <span className="tabular block text-sm font-medium sm:mt-1">{user.reminderTime}</span>
+            <span className="fig block text-sm font-medium sm:mt-1">{user.reminderTime}</span>
           </div>
           <div className="flex items-baseline justify-between gap-3 sm:block">
             <span className="text-xs text-muted-foreground">Frequency</span>
@@ -646,7 +643,7 @@ export default async function DashboardPage() {
           </div>
           <div className="flex items-baseline justify-between gap-3 sm:block">
             <span className="text-xs text-muted-foreground">Your best time</span>
-            <span className="tabular block text-sm font-medium sm:mt-1">{bestTimeLabel}</span>
+            <span className="fig block text-sm font-medium sm:mt-1">{bestTimeLabel}</span>
           </div>
         </div>
       </div>

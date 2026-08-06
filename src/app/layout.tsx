@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google"
+import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { Providers } from "./providers"
 
@@ -10,13 +10,6 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-// Display face — used only for the wordmark, section headings, and the
-// hero numerals. Body copy stays on Geist.
-const displaySans = Bricolage_Grotesque({
-  variable: "--font-display",
   subsets: ["latin"],
 });
 
@@ -89,7 +82,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${displaySans.variable} min-h-screen bg-background text-foreground antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-background text-foreground antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

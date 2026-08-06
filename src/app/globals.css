@@ -4,13 +4,13 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Anchor design tokens.
+ * Anchor design tokens — logbook.
  *
- * Everything here is warm on purpose. The neutrals carry a low amount of
- * chroma at a warm hue rather than being true grays, so surfaces read as
- * paper-and-lamplight instead of screen-gray. Status colors are earthy
- * (moss, honey, rust) rather than saturated UI primaries, because this app
- * reports on missed habits and should never feel like it is scolding.
+ * Anchor is a record of what you actually did, so the interface is built like
+ * a well-kept log: warm paper ground, dark ink, ruled structure, and figures
+ * set in mono so columns line up. Color is used the way a ledger uses red ink
+ * — sparingly, and only where it means something. There are deliberately no
+ * glows, gradients, or soft shadows anywhere in this system.
  */
 
 @theme inline {
@@ -18,7 +18,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -38,6 +37,7 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-rule: var(--rule);
   --color-info-foreground: var(--info-foreground);
   --color-info: var(--info);
   --color-warning-foreground: var(--warning-foreground);
@@ -46,6 +46,8 @@
   --color-success: var(--success);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-destructive: var(--destructive);
+  --color-stamp-foreground: var(--stamp-foreground);
+  --color-stamp: var(--stamp);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -58,125 +60,129 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
+  --radius-sm: calc(var(--radius) - 1px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
   --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-2xl: calc(var(--radius) + 6px);
+  --radius-3xl: calc(var(--radius) + 8px);
+  --radius-4xl: calc(var(--radius) + 10px);
 }
 
 :root {
-  --radius: 0.75rem;
+  /* Crisp, not pillowy. Soft corners everywhere is the house style of every
+     generated dashboard; a log sheet has edges. */
+  --radius: 0.25rem;
 
-  /* Warm paper neutrals — chroma stays under 0.02 so these still read neutral. */
-  --background: oklch(0.985 0.006 80);
-  --foreground: oklch(0.24 0.014 55);
-  --card: oklch(1 0.002 80);
-  --card-foreground: oklch(0.24 0.014 55);
-  --popover: oklch(1 0.002 80);
-  --popover-foreground: oklch(0.24 0.014 55);
+  --background: oklch(0.965 0.009 85);
+  --foreground: oklch(0.21 0.015 52);
+  --card: oklch(0.99 0.005 85);
+  --card-foreground: oklch(0.21 0.015 52);
+  --popover: oklch(0.99 0.005 85);
+  --popover-foreground: oklch(0.21 0.015 52);
 
-  /* Ember: a burnt clay, not a safety-cone orange. */
-  --primary: oklch(0.52 0.14 45);
-  --primary-foreground: oklch(0.99 0.005 80);
+  /* Primary is ink. Actions are printed, not highlighted. */
+  --primary: oklch(0.25 0.018 52);
+  --primary-foreground: oklch(0.97 0.008 85);
 
-  --secondary: oklch(0.955 0.008 78);
-  --secondary-foreground: oklch(0.3 0.016 52);
-  --muted: oklch(0.955 0.008 78);
-  --muted-foreground: oklch(0.5 0.016 62);
-  --accent: oklch(0.94 0.014 72);
-  --accent-foreground: oklch(0.3 0.016 52);
+  --secondary: oklch(0.93 0.011 82);
+  --secondary-foreground: oklch(0.27 0.018 52);
+  --muted: oklch(0.93 0.011 82);
+  --muted-foreground: oklch(0.47 0.015 62);
+  --accent: oklch(0.91 0.014 80);
+  --accent-foreground: oklch(0.27 0.018 52);
 
-  /* Status: earthy, deliberately desaturated. */
-  --success: oklch(0.52 0.1 150);
-  --success-foreground: oklch(0.99 0.005 80);
-  /* Pushed toward amber so "Behind" is not mistaken for "Out of reach". */
-  --warning: oklch(0.55 0.12 84);
-  --warning-foreground: oklch(0.99 0.005 80);
-  --destructive: oklch(0.52 0.17 28);
-  --destructive-foreground: oklch(0.99 0.005 80);
-  --info: oklch(0.5 0.08 235);
-  --info-foreground: oklch(0.99 0.005 80);
+  /* Stamp: the red-ink annotation. Reserved for "today" and things at risk. */
+  --stamp: oklch(0.47 0.16 32);
+  --stamp-foreground: oklch(0.97 0.008 85);
 
-  --border: oklch(0.9 0.01 76);
-  --input: oklch(0.9 0.01 76);
-  --ring: oklch(0.52 0.14 45);
+  --success: oklch(0.47 0.09 148);
+  --success-foreground: oklch(0.97 0.008 85);
+  --warning: oklch(0.5 0.11 76);
+  --warning-foreground: oklch(0.97 0.008 85);
+  --destructive: oklch(0.47 0.16 32);
+  --destructive-foreground: oklch(0.97 0.008 85);
+  --info: oklch(0.45 0.07 225);
+  --info-foreground: oklch(0.97 0.008 85);
 
-  /*
-   * Goal colors for the heatmap. Chroma is held near 0.10–0.14 across all
-   * eight so no single goal shouts over the others — the previous palette
-   * used eight maxed-out hues, which fought each other in a 12-week grid.
-   */
-  --chart-1: oklch(0.62 0.14 45);
-  --chart-2: oklch(0.6 0.1 152);
-  --chart-3: oklch(0.7 0.12 82);
-  --chart-4: oklch(0.55 0.11 265);
-  --chart-5: oklch(0.6 0.13 12);
-  --chart-6: oklch(0.62 0.09 195);
-  --chart-7: oklch(0.55 0.11 320);
-  --chart-8: oklch(0.62 0.09 115);
+  /* Two weights of line: rule for structure, border for containment. */
+  --rule: oklch(0.83 0.014 78);
+  --border: oklch(0.87 0.012 80);
+  --input: oklch(0.87 0.012 80);
+  --ring: oklch(0.47 0.16 32);
 
-  --sidebar: oklch(0.97 0.008 78);
-  --sidebar-foreground: oklch(0.24 0.014 55);
-  --sidebar-primary: oklch(0.52 0.14 45);
-  --sidebar-primary-foreground: oklch(0.99 0.005 80);
-  --sidebar-accent: oklch(0.94 0.014 72);
-  --sidebar-accent-foreground: oklch(0.3 0.016 52);
-  --sidebar-border: oklch(0.9 0.01 76);
-  --sidebar-ring: oklch(0.52 0.14 45);
+  --chart-1: oklch(0.55 0.13 40);
+  --chart-2: oklch(0.53 0.09 152);
+  --chart-3: oklch(0.62 0.11 82);
+  --chart-4: oklch(0.5 0.1 258);
+  --chart-5: oklch(0.53 0.12 12);
+  --chart-6: oklch(0.55 0.08 200);
+  --chart-7: oklch(0.5 0.1 315);
+  --chart-8: oklch(0.56 0.08 118);
+
+  --sidebar: oklch(0.95 0.01 84);
+  --sidebar-foreground: oklch(0.21 0.015 52);
+  --sidebar-primary: oklch(0.25 0.018 52);
+  --sidebar-primary-foreground: oklch(0.97 0.008 85);
+  --sidebar-accent: oklch(0.91 0.014 80);
+  --sidebar-accent-foreground: oklch(0.27 0.018 52);
+  --sidebar-border: oklch(0.87 0.012 80);
+  --sidebar-ring: oklch(0.47 0.16 32);
 }
 
 .dark {
-  /* Warm charcoal rather than black — same hue family as the light theme. */
-  --background: oklch(0.19 0.012 62);
-  --foreground: oklch(0.96 0.008 80);
-  --card: oklch(0.235 0.014 62);
-  --card-foreground: oklch(0.96 0.008 80);
-  --popover: oklch(0.245 0.014 62);
-  --popover-foreground: oklch(0.96 0.008 80);
+  --background: oklch(0.17 0.011 58);
+  --foreground: oklch(0.93 0.01 82);
+  --card: oklch(0.205 0.013 58);
+  --card-foreground: oklch(0.93 0.01 82);
+  --popover: oklch(0.215 0.013 58);
+  --popover-foreground: oklch(0.93 0.01 82);
 
-  --primary: oklch(0.72 0.13 52);
-  --primary-foreground: oklch(0.2 0.02 48);
+  /* Ink inverts to chalk. */
+  --primary: oklch(0.9 0.012 82);
+  --primary-foreground: oklch(0.19 0.015 55);
 
-  --secondary: oklch(0.29 0.014 62);
-  --secondary-foreground: oklch(0.96 0.008 80);
-  --muted: oklch(0.29 0.014 62);
-  --muted-foreground: oklch(0.73 0.014 72);
-  --accent: oklch(0.33 0.018 64);
-  --accent-foreground: oklch(0.96 0.008 80);
+  --secondary: oklch(0.26 0.013 58);
+  --secondary-foreground: oklch(0.93 0.01 82);
+  --muted: oklch(0.26 0.013 58);
+  --muted-foreground: oklch(0.7 0.014 72);
+  --accent: oklch(0.3 0.016 60);
+  --accent-foreground: oklch(0.93 0.01 82);
 
-  --success: oklch(0.72 0.11 150);
-  --success-foreground: oklch(0.2 0.02 150);
-  --warning: oklch(0.8 0.13 86);
-  --warning-foreground: oklch(0.2 0.02 86);
-  --destructive: oklch(0.66 0.16 28);
-  --destructive-foreground: oklch(0.99 0.005 80);
-  --info: oklch(0.7 0.09 235);
-  --info-foreground: oklch(0.2 0.02 235);
+  --stamp: oklch(0.63 0.16 32);
+  --stamp-foreground: oklch(0.17 0.015 40);
 
-  --border: oklch(0.96 0.008 80 / 12%);
-  --input: oklch(0.96 0.008 80 / 16%);
-  --ring: oklch(0.72 0.13 52);
+  --success: oklch(0.68 0.1 148);
+  --success-foreground: oklch(0.18 0.02 148);
+  --warning: oklch(0.74 0.12 80);
+  --warning-foreground: oklch(0.18 0.02 80);
+  --destructive: oklch(0.63 0.16 32);
+  --destructive-foreground: oklch(0.97 0.008 85);
+  --info: oklch(0.66 0.08 225);
+  --info-foreground: oklch(0.18 0.02 225);
 
-  --chart-1: oklch(0.7 0.14 45);
-  --chart-2: oklch(0.72 0.11 152);
-  --chart-3: oklch(0.79 0.12 82);
-  --chart-4: oklch(0.68 0.12 265);
-  --chart-5: oklch(0.7 0.13 12);
-  --chart-6: oklch(0.72 0.09 195);
-  --chart-7: oklch(0.68 0.12 320);
-  --chart-8: oklch(0.72 0.09 115);
+  --rule: oklch(0.93 0.01 82 / 14%);
+  --border: oklch(0.93 0.01 82 / 18%);
+  --input: oklch(0.93 0.01 82 / 20%);
+  --ring: oklch(0.63 0.16 32);
 
-  --sidebar: oklch(0.235 0.014 62);
-  --sidebar-foreground: oklch(0.96 0.008 80);
-  --sidebar-primary: oklch(0.72 0.13 52);
-  --sidebar-primary-foreground: oklch(0.2 0.02 48);
-  --sidebar-accent: oklch(0.33 0.018 64);
-  --sidebar-accent-foreground: oklch(0.96 0.008 80);
-  --sidebar-border: oklch(0.96 0.008 80 / 12%);
-  --sidebar-ring: oklch(0.72 0.13 52);
+  --chart-1: oklch(0.66 0.13 40);
+  --chart-2: oklch(0.68 0.1 152);
+  --chart-3: oklch(0.74 0.11 82);
+  --chart-4: oklch(0.64 0.11 258);
+  --chart-5: oklch(0.66 0.12 12);
+  --chart-6: oklch(0.68 0.08 200);
+  --chart-7: oklch(0.64 0.11 315);
+  --chart-8: oklch(0.68 0.08 118);
+
+  --sidebar: oklch(0.205 0.013 58);
+  --sidebar-foreground: oklch(0.93 0.01 82);
+  --sidebar-primary: oklch(0.9 0.012 82);
+  --sidebar-primary-foreground: oklch(0.19 0.015 55);
+  --sidebar-accent: oklch(0.3 0.016 60);
+  --sidebar-accent-foreground: oklch(0.93 0.01 82);
+  --sidebar-border: oklch(0.93 0.01 82 / 18%);
+  --sidebar-ring: oklch(0.63 0.16 32);
 }
 
 @layer base {
@@ -186,30 +192,36 @@
   body {
     @apply bg-background text-foreground;
   }
-
-  /* Numerals should line up in every stat readout on the dashboard. */
-  .tabular {
-    font-variant-numeric: tabular-nums;
-  }
 }
 
 @layer components {
   /*
-   * Section label. Sections are signposts, not headlines — the hero is the
-   * only thing on the page allowed to be loud.
+   * Every figure in the app is set in mono and tabular, so numbers in a
+   * column line up the way they would in a ledger.
    */
-  .section-label {
-    @apply text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+  .fig {
+    @apply font-mono tabular-nums;
+    font-feature-settings: "tnum" 1;
   }
 
-  /* Ambient surface: present, but visually behind the day's actual work. */
-  .surface-quiet {
-    @apply rounded-2xl border border-border/70 bg-card/50;
+  /*
+   * Section heading: a label followed by a rule that runs to the edge. The
+   * rule is the structure — it separates entries the way a ruled page does.
+   */
+  .ruled {
+    @apply flex items-center gap-3 text-sm font-medium text-foreground;
+  }
+  .ruled::after {
+    content: "";
+    @apply h-px flex-1 bg-rule;
   }
 
-  /* Working surface: the cards a person actually acts on. */
+  /* A sheet you act on, and a sheet that is only there for reference. */
   .surface {
-    @apply rounded-2xl border bg-card;
+    @apply rounded-md border bg-card;
+  }
+  .surface-quiet {
+    @apply rounded-md border border-rule bg-card/40;
   }
 }
 

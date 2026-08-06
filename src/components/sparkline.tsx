@@ -13,7 +13,7 @@ export function Sparkline({
       {values.map((value, index) => (
         <span
           key={index}
-          className="w-2 rounded bg-primary/60"
+          className="w-2 rounded-[1px] bg-foreground/45"
           style={{ height: `${Math.max(3, (value / max) * 24)}px` }}
         />
       ))}

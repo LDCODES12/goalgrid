@@ -20,7 +20,7 @@ export function CompletionRing({
         aria-label={`${label}: ${clamped} percent`}
       >
         <div className="flex h-[104px] w-[104px] flex-col items-center justify-center rounded-full bg-card">
-          <span className="font-display tabular text-3xl font-semibold leading-none">
+          <span className="fig text-3xl font-semibold leading-none">
             {clamped}
             <span className="text-lg">%</span>
           </span>

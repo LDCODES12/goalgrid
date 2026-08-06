@@ -80,10 +80,10 @@ function GoalCardContent({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-4 transition-colors",
-        todayDone && !todayPartial ? "border-success/30 bg-success/5" : "",
+        "rounded-md border bg-card p-4 transition-colors",
+        todayDone && !todayPartial ? "border-success/40 bg-success/5" : "",
         isDragging && "opacity-50",
-        isOverlay && "cursor-grabbing shadow-2xl ring-2 ring-primary/20"
+        isOverlay && "cursor-grabbing ring-2 ring-stamp/30"
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -95,15 +95,16 @@ function GoalCardContent({
             )}>
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
+            {/* Same mark vocabulary as the week log above. */}
             <span
-              className={`h-2.5 w-2.5 rounded-full ${
+              className={`h-3 w-3 rounded-[2px] ${
                 todayDone
                   ? todayPartial
-                    ? "bg-warning"
+                    ? "border border-foreground/60 bg-foreground/30"
                     : "bg-success"
                   : todayCount > 0
-                    ? "bg-warning"
-                    : "border-2 border-muted-foreground/30"
+                    ? "border border-foreground/60 bg-foreground/30"
+                    : "border border-rule"
               }`}
             />
             <Link 
@@ -117,7 +118,7 @@ function GoalCardContent({
               {consistency}%
             </Badge>
           </div>
-          <div className="tabular flex items-center gap-3 pl-6 text-xs text-muted-foreground">
+          <div className="fig flex items-center gap-3 pl-6 text-xs text-muted-foreground">
             <span>
               {goal.cadenceType === "DAILY"
                 ? hasMultiTarget
@@ -246,7 +247,7 @@ export function DraggableDashboardGoals({ goals }: DraggableDashboardGoalsProps)
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border-2 border-dashed bg-muted/30 p-6 text-center">
+      <div className="rounded-md border border-dashed border-rule bg-muted/30 p-6 text-center">
         <p className="text-sm text-muted-foreground">
           No goals yet.{" "}
           <Link href="/goals" className="text-primary font-medium hover:underline">
