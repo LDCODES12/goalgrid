@@ -82,14 +82,14 @@ export default async function AppLayout({
     : 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-muted/40 to-background">
+    <div className="min-h-screen bg-background">
       <DynamicFavicon completionPercent={completionPercent} points={weeklyPoints} />
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-3">
           <div className="flex items-center gap-8">
-            <Link 
-              href="/dashboard" 
-              className="text-lg font-semibold hover:opacity-80 transition-opacity"
+            <Link
+              href="/dashboard"
+              className="font-display text-lg font-semibold tracking-tight transition-opacity hover:opacity-70"
             >
               Anchor
             </Link>
@@ -105,13 +105,13 @@ export default async function AppLayout({
           </div>
         </div>
         {/* Mobile nav */}
-        <nav className="flex items-center justify-center gap-1 border-t px-4 py-2 sm:hidden">
+        <nav className="flex items-center justify-center gap-1 border-t border-border/70 px-4 py-2 sm:hidden">
           {navItems.map((item) => (
             <NavLink key={item.href} href={item.href} label={item.label} />
           ))}
         </nav>
       </header>
-      <main className="mx-auto w-full max-w-6xl px-6 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
     </div>
   )
 }

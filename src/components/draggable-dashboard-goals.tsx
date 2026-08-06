@@ -80,10 +80,10 @@ function GoalCardContent({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-4 transition-shadow",
-        todayDone && !todayPartial ? "border-emerald-500/30 bg-emerald-500/5" : "",
+        "rounded-xl border bg-card p-4 transition-colors",
+        todayDone && !todayPartial ? "border-success/30 bg-success/5" : "",
         isDragging && "opacity-50",
-        isOverlay && "shadow-2xl ring-2 ring-primary/20 cursor-grabbing"
+        isOverlay && "cursor-grabbing shadow-2xl ring-2 ring-primary/20"
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -97,12 +97,12 @@ function GoalCardContent({
             </div>
             <span
               className={`h-2.5 w-2.5 rounded-full ${
-                todayDone 
-                  ? todayPartial 
-                    ? "bg-amber-500" 
-                    : "bg-emerald-500" 
+                todayDone
+                  ? todayPartial
+                    ? "bg-warning"
+                    : "bg-success"
                   : todayCount > 0
-                    ? "bg-amber-500"
+                    ? "bg-warning"
                     : "border-2 border-muted-foreground/30"
               }`}
             />
@@ -117,10 +117,10 @@ function GoalCardContent({
               {consistency}%
             </Badge>
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground pl-6">
+          <div className="tabular flex items-center gap-3 pl-6 text-xs text-muted-foreground">
             <span>
               {goal.cadenceType === "DAILY"
-                ? hasMultiTarget 
+                ? hasMultiTarget
                   ? `${dailyTarget}x/day`
                   : "Daily"
                 : `${goal.weeklyTarget}x/week`}
@@ -128,7 +128,7 @@ function GoalCardContent({
             <span>•</span>
             {hasMultiTarget && goal.cadenceType === "DAILY" && (
               <>
-                <span className={todayCount >= dailyTarget ? "text-emerald-600" : ""}>
+                <span className={todayCount >= dailyTarget ? "font-medium text-success" : ""}>
                   {todayCount}/{dailyTarget} today
                 </span>
                 <span>•</span>

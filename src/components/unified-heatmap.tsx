@@ -4,22 +4,27 @@ import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { format, subWeeks, addDays, startOfWeek } from "date-fns"
 
-// Curated color palette for goals - distinct, accessible colors
+/*
+ * Goal colors come from the shared chart tokens, so they stay in the same
+ * chroma range as each other and follow the light/dark theme. Referencing the
+ * CSS variables (rather than fixed hex) is what keeps a dense 12-week grid
+ * from turning into eight competing signals.
+ */
 const GOAL_COLORS = [
-  { bg: "bg-blue-500", ring: "ring-blue-500", hex: "#3b82f6" },
-  { bg: "bg-emerald-500", ring: "ring-emerald-500", hex: "#10b981" },
-  { bg: "bg-amber-500", ring: "ring-amber-500", hex: "#f59e0b" },
-  { bg: "bg-violet-500", ring: "ring-violet-500", hex: "#8b5cf6" },
-  { bg: "bg-rose-500", ring: "ring-rose-500", hex: "#f43f5e" },
-  { bg: "bg-cyan-500", ring: "ring-cyan-500", hex: "#06b6d4" },
-  { bg: "bg-orange-500", ring: "ring-orange-500", hex: "#f97316" },
-  { bg: "bg-pink-500", ring: "ring-pink-500", hex: "#ec4899" },
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
+  "var(--chart-7)",
+  "var(--chart-8)",
 ]
 
 type GoalData = {
   id: string
   name: string
-  color: (typeof GOAL_COLORS)[number]
+  color: string
 }
 
 type DayData = {
@@ -168,16 +173,19 @@ export function UnifiedHeatmap({
     } else if (segments.length === 1) {
       // Single goal - use its color with intensity based on count
       const intensity = Math.min(1, total / Math.max(1, maxTotal / 2))
-      const opacityClass = intensity < 0.3 ? "opacity-40" : intensity < 0.6 ? "opacity-70" : "opacity-100"
+      const opacity = intensity < 0.3 ? 0.4 : intensity < 0.6 ? 0.7 : 1
       cellContent = (
         <div
           className={cn(
             "rounded-[3px] transition-all duration-150",
-            segments[0].color.bg,
-            opacityClass,
             day.isToday && "ring-2 ring-primary ring-offset-1 ring-offset-background"
           )}
-          style={{ width: cellSize, height: cellSize }}
+          style={{
+            width: cellSize,
+            height: cellSize,
+            background: segments[0].color,
+            opacity,
+          }}
         />
       )
     } else {
@@ -185,7 +193,7 @@ export function UnifiedHeatmap({
       const gradientStops = segments
         .map((s, i) => {
           const pct = ((i + 0.5) / segments.length) * 100
-          return `${s.color.hex} ${pct}%`
+          return `${s.color} ${pct}%`
         })
         .join(", ")
       cellContent = (
@@ -228,7 +236,8 @@ export function UnifiedHeatmap({
                     return (
                       <div key={g.goalId} className="flex items-center gap-2">
                         <span
-                          className={cn("w-2 h-2 rounded-full", goal.color.bg)}
+                          className="h-2 w-2 rounded-full"
+                          style={{ background: goal.color }}
                         />
                         <span className="truncate max-w-[120px]">{goal.name}</span>
                         <span className="text-muted-foreground ml-auto">{g.count}x</span>
@@ -264,17 +273,22 @@ export function UnifiedHeatmap({
           <button
             key={goal.id}
             onClick={() => setSelectedGoal(selectedGoal === goal.id ? null : goal.id)}
+            aria-pressed={selectedGoal === goal.id}
             className={cn(
-              "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors",
-              selectedGoal === goal.id
-                ? "ring-2 ring-offset-1 ring-offset-background"
-                : "hover:bg-muted/50",
-              selectedGoal === goal.id ? goal.color.ring : "",
-              selectedGoal === goal.id ? "bg-muted" : "bg-muted/30"
+              "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors",
+              selectedGoal === goal.id ? "bg-muted" : "bg-muted/30 hover:bg-muted/60"
             )}
+            style={
+              selectedGoal === goal.id
+                ? { outline: `2px solid ${goal.color}`, outlineOffset: 1 }
+                : undefined
+            }
           >
-            <span className={cn("w-2 h-2 rounded-full shrink-0", goal.color.bg)} />
-            <span className="truncate max-w-[100px]">{goal.name}</span>
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ background: goal.color }}
+            />
+            <span className="max-w-[100px] truncate">{goal.name}</span>
           </button>
         ))}
       </div>
